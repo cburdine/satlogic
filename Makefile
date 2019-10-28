@@ -1,9 +1,10 @@
 #==============================================================
 #
 # Makefile for DPLL deterministic SAT solver 
-#  (Colin Burdine, last edited 10/16/2019)
+#  (Colin Burdine, last edited 10/27/2019)
 #
 #==============================================================
+<<<<<<< HEAD
 CGOFILES=main.go
 
 
