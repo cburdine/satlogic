@@ -10,7 +10,7 @@ import (
 func main() {
 
 	// parse formula:
-	formulaData, err := ParseCnf("data/simple-unsat.cnf")
+	formulaData, err := ParseCnf("data/uf50-01.cnf")
 	if err != nil {
 		panic(err)
 	}
