@@ -39,11 +39,11 @@ func ParseCnf(path string) (*cnfData, error) {
 			if line[0] == 'p' {
 
 				if parsedHeader {
-					return nil, errors.New("found two instances of header beginning wiht 'p'")
+					return nil, errors.New(fmt.Sprintf("%s: found two instances of header beginning wiht 'p'", path))
 				}
 
 				if data.maxNumVars > 0 || data.numClauses > 0 {
-					return nil, errors.New("unrecognized cnf configuration format")
+					return nil, errors.New(fmt.Sprintf("%s: unrecognized cnf configuration format", path))
 				}
 				fmt.Sscanf(line, "p %s %d  %d", &data.format, &data.maxNumVars, &data.numClauses)
 				parsedHeader = true
@@ -53,7 +53,7 @@ func ParseCnf(path string) (*cnfData, error) {
 				terminal := -1
 				fmt.Sscanf(line, "%d %d %d %d", &varLine[0], &varLine[1], &varLine[2], &terminal)
 				if terminal != 0 {
-					return nil, errors.New("invalid 3-cnf file line: " + line)
+					return nil, errors.New(fmt.Sprintf("%s: invalid 3-cnf file line: %s", path, line))
 				}
 				for _, v := range varLine {
 					foundMaxVar = absMax(v, foundMaxVar)
@@ -62,21 +62,21 @@ func ParseCnf(path string) (*cnfData, error) {
 				foundClauses++
 			}
 		}
+	}
 
-		// check file header aligns with data:
-		if parsedHeader {
-			if data.numClauses != foundClauses {
-				return nil, errors.New(fmt.Sprintf("number of clauses in header vs file mismatched (%d vs %d)", data.numClauses, foundClauses))
-			}
-			if data.maxNumVars != foundMaxVar {
-				return nil, errors.New(fmt.Sprintf("number of vars in header vs file mismatched (%d vs %d)", data.maxNumVars, foundMaxVar))
-			}
-		} else {
-			// else set header data to what was read:
-			data.format = "cnf"
-			data.numClauses = foundClauses
-			data.maxNumVars = foundMaxVar
+	// check file header aligns with data:
+	if parsedHeader {
+		if data.numClauses != foundClauses {
+			return nil, errors.New(fmt.Sprintf("%s: number of clauses in header vs file mismatched (%d vs %d)", path, data.numClauses, foundClauses))
 		}
+		if data.maxNumVars != foundMaxVar {
+			return nil, errors.New(fmt.Sprintf("%s: number of vars in header vs file mismatched (%d vs %d)", path, data.maxNumVars, foundMaxVar))
+		}
+	} else {
+		// else set header data to what was read:
+		data.format = "cnf"
+		data.numClauses = foundClauses
+		data.maxNumVars = foundMaxVar
 	}
 
 	return &data, nil

@@ -17,4 +17,9 @@ install: main.go solver/dpll.c solver/dpll.h
 	go install
 
 ctest: solver/dpll.c solver/dpll.h solver/dpll_test.c
-	gcc -Wpedantic -g -o bin/solver_c_test solver/*.c
+	gcc -Wpedantic -pg -o bin/solver_c_test solver/*.c
+
+cprof: bin/solver_c_test
+	./bin/solver_c_test > /dev/null
+	gprof ./bin/solver_c_test ./gmon.out > ./bin/profile.txt
+	rm -f gmon.out
