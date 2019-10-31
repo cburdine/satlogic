@@ -27,7 +27,13 @@ For more SAT problem CNF test cases, I would highly recommend the following site
 
 ## How to run:
 
-Once the go binary builds successfully in /bin, simply run:
+Once the go binary builds successfully in /bin, run the executable with any of the .cnf files in the ./data directory:
 ```
-go run .
+./bin/gosat -solver=dpll ./data/*.cnf
 ```
+
+The general usage of the built binary is as follows:
+```
+./bin/gosat [-solver=<solver>] [FILES ...]
+```
+Currently, the only solver supported is: `dpll`
