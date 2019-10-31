@@ -67,9 +67,8 @@ Bool dpll(Clause* clauses, int numClauses, int numVariables){
     assert(numVariables > 0);
 
     /* stack initializations */
-    ++numVariables;
     branchVar = 0;
-    init(&pureLiterals, numVariables);
+    init(&pureLiterals, numVariables+1);
     litStatus = TRUE;
 
     /* identify types of clauses */
@@ -174,7 +173,7 @@ Bool dpll(Clause* clauses, int numClauses, int numVariables){
                 }
             }
             if(!excludeClause){
-                /* copy clause to both next sets of clauses */
+                /* copy clause verbatim to both next sets of clauses */
                 nextClausesA[numNextClausesA] = clauses[c];
                 nextClausesB[numNextClausesB] = clauses[c];
                 ++numNextClausesA;
@@ -205,13 +204,13 @@ Bool dpll(Clause* clauses, int numClauses, int numVariables){
 }
 
 /* dedups and converts variables into clauses */
-Bool dpll3Sat(int* sentence, int numClauses){
+Bool dpll3Sat(int sentence[], int numClauses){
     int c,l,lu,v, maxVar;
     Bool copyClause, activeLiteral, result;
     Clause* initClauses;
     int numInitClauses, numInactiveLiterals;
 
-    /* copy into clause structs, deduping vairables */
+    /* copy into clause structs, deduping variables */
     initClauses = malloc(numClauses*sizeof(Clause));
     numInitClauses = 0;
     maxVar = 0;

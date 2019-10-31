@@ -10,6 +10,10 @@ import (
 
 var SupportedSolvers = map[string]bool{"dpll": true}
 
+const SentenceBufferSize = 30000
+
+var sentenceBuffer = make([]C.int, SentenceBufferSize)
+
 func main() {
 
 	solver := flag.String("solver", "dpll", "the solver to be used")
@@ -35,14 +39,14 @@ func main() {
 			panic(err)
 		}
 
-		cIntSentence := make([]C.int, len(formulaData.sentence), len(formulaData.sentence))
 		for k, v := range formulaData.sentence {
-			cIntSentence[k] = C.int(v)
+			sentenceBuffer[k] = C.int(v)
 		}
 
 		// evaluate sentence:
 		fmt.Printf("[%s]: ", file)
-		result := C.dpll3Sat(&cIntSentence[0], C.int(len(cIntSentence)))
+		arrptr := (*C.int)(&sentenceBuffer[0])
+		result := C.dpll3Sat(arrptr, C.int(len(formulaData.sentence)))
 
 		// print result
 		resultStatus := "SATISFIABLE"

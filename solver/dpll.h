@@ -24,4 +24,4 @@ void printClauses(Clause* clauses, int numClauses, FILE* out);
 Bool dpll(Clause* clauses, int numClauses, int numVariables);
 
 /* dedups and converts variables into clauses */
-Bool dpll3Sat(int* sentence, int sentenceLen);
+Bool dpll3Sat(int sentence[], int sentenceLen);

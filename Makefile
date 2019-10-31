@@ -5,6 +5,7 @@
 #
 #==============================================================
 CGOFILES=main.go
+BENCHMARKDATA=./data/medium/*.cnf
 
 # fast build- this will not build changes in C code!
 build: main.go solver/dpll.c solver/dpll.h
@@ -19,11 +20,11 @@ install: main.go solver/dpll.c solver/dpll.h
 	go install
 
 # builds test cases in C into an executable for profiling
-ctest: solver/dpll.c solver/dpll.h solver/dpll_test.c
+ctest: solver/dpll.c solver/dpll.h solver/solver_test.c
 	gcc -Wpedantic -pg -o bin/solver_c_test solver/*.c
 
 # does gprof profiling- stores result in bin/profile.txt
 cprof: bin/solver_c_test
-	./bin/solver_c_test > /dev/null
+	./bin/solver_c_test $(BENCHMARKDATA) > /dev/null
 	gprof ./bin/solver_c_test ./gmon.out > ./bin/profile.txt
 	rm -f gmon.out
