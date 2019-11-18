@@ -4,61 +4,14 @@
 #include <assert.h>
 
 #include "dpll.h"
-
-/* macros for Boolean values */
-#define TRUE 1
-#define FALSE 0
-#define TRUE_NEGATIVE -1
-#define ENTIRE_CLAUSE 3
-
-void init(VarSet* vset, int numVars){
-    vset->contains = calloc(numVars+1,sizeof(Bool));
-    vset->numValues = 0;
-}
-
-void insertVar(VarSet *vset, int var){
-    if(!vset->contains[abs(var)]){
-        if(var > 0){
-            vset->contains[var] = TRUE;
-        }else{
-            vset->contains[abs(var)] = TRUE_NEGATIVE;
-        }
-        ++(vset->numValues);
-    }
-}
-
-void clear(VarSet* vset){
-    free(vset->contains);
-}
-
-void printClauses(Clause* clauses, int numClauses, FILE* out){
-    int c,l;
-    for(c = 0; c < numClauses; ++c){
-        fputs("( ", out);
-        if(clauses[c].active[ENTIRE_CLAUSE]){
-            for(l = 0; l < ENTIRE_CLAUSE; ++l){
-                if(clauses[c].active[l]){
-                    fprintf(out, "%3d ", clauses[c].literals[l]);
-                }else{
-                    fputs("    ", out);
-                }
-            }
-        }else{
-            fputs("--- --- --- ", out);
-        }
-        fputs(") ", out);
-    }
-    fputs("\n", out);
-}
-
-
+#include "structures.h"
 
 /* assumes all duplicate vars in clauses are removed */
 Bool dpll(Clause* clauses, int numClauses, int numVariables){
 
     int c, l, v, branchVar;
     int numPosLiterals, numNegLiterals, lastPosLiteral, lastNegLiteral;
-    VarSet pureLiterals;
+    LiteralInstanceSet pureLiterals;
     Clause *nextClausesA, *nextClausesB;
     int numNextClausesA, numNextClausesB;
     Bool litStatus, excludeClause;
@@ -77,7 +30,7 @@ Bool dpll(Clause* clauses, int numClauses, int numVariables){
         numPosLiterals = 0;
         numNegLiterals = 0;
 
-        for(l = 0; l < ENTIRE_CLAUSE; ++l){
+        for(l = 0; l < CLAUSE_SIZE; ++l){
             if(clauses[c].active[l]){
                 if(clauses[c].literals[l] > 0){
                     ++numPosLiterals;
@@ -203,6 +156,90 @@ Bool dpll(Clause* clauses, int numClauses, int numVariables){
     return litStatus;
 }
 
+
+/* improvement upon old dpll */
+Bool dpllStatic(Clause* clauses, int numClauses, int numVariables){
+    int c, l, pureLitInd, pureLit, currentClauseInd, branchVar;
+    LiteralInstanceSet pureLiterals;
+    LiteralToClauseMap unitPropMap;
+    int *numNextClausesA, *numNextClausesB;
+    Clause* currentClause;
+    Bool litStatus, excludeClause, backtrack;
+
+    assert(numClauses > 0);
+    assert(numVariables > 0);
+
+    /* stack and literal set initialization */
+    SentenceStack sentenceStack;
+    initSentenceStack(&sentenceStack, numClauses, numVariables);
+    initLiteralInstanceSet(&pureLiterals, numVariables+1);
+
+    /* generate ClauseToLiteral map */
+    initLiteralToClauseMap(&unitPropMap, numVariables, numClauses);
+
+    /* push initial sentence on stack */
+    pushSentence(&sentenceStack, clauses, numClauses);
+
+
+    /* iterate until search tree is exhausted: */
+    while(sentenceStack.top >= 0){
+
+        /* pop a sentence from the stack */
+        numClauses = popSentence(&sentenceStack, &clauses);
+
+        clearAllLiterals(&unitPropMap);
+        clearAllClauseLiterals(&unitPropMap);
+        backtrack = FALSE;
+
+        for(c = 0; c < numClauses; ++c){
+            if(clauses[c].numActiveLiterals > 0){
+
+                /* process clause in unit prop map */
+                insertClauseLiterals(&unitPropMap, &clauses[c]);
+
+                if(clauses[c].numActiveLiterals == 1){
+
+                    /* if clause contains a single pure literal, 
+                       add it to the pure literal set            */
+                    for(l = 0; l < CLAUSE_SIZE; ++l){
+                        if(clauses[c].active[l])
+                        insertLiteral(&pureLiterals, clauses[c].literals[l]);
+                    }
+                }
+
+            } else {
+                /* if an empty clause is found, backtrack */
+                backtrack = TRUE;
+            }
+        }
+
+        if(!backtrack){
+
+            /* perform literal unit propagation */
+            for(pureLitInd = 0; pureLitInd < pureLiterals.size && !backtrack; ++pureLitInd){
+                pureLit = pureLiterals.literals[pureLitInd];
+                litStatus = pureLiterals.statusMap[pureLitInd];
+
+                for(l = 0; l < unitPropMap.literalFrequency[l] && !backtrack; ++l){
+                    currentClause = unitPropMap.clauseOccurrences[abs(pureLit)][l];
+                    currentClauseInd = unitPropMap.clauseIndices[abs(pureLit)][l];
+
+                    if(pureLit == currentClause->literals[currentClauseInd]){
+                        /* exclude clause entirely */
+                        current
+                    } else {
+                        /* eliminate literal */
+                    }
+                }
+
+
+            }
+        }
+    }
+
+
+}
+
 /* dedups and converts variables into clauses */
 Bool dpll3Sat(int sentence[], int numClauses){
     int c,l,lu,v, maxVar;
@@ -242,6 +279,7 @@ Bool dpll3Sat(int sentence[], int numClauses){
         }
         if(copyClause && numInactiveLiterals < 3){
             initClauses[numInitClauses].active[ENTIRE_CLAUSE] = TRUE;
+            initClauses[numInitClauses].numActiveLiterals = ENTIRE_CLAUSE - numInactiveLiterals;
             ++numInitClauses;
         }
     }
