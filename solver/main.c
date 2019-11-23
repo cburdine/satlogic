@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "dpll.h"
+#include <assert.h>
 
 #define BUFF_SIZE 1024
 #define MAX_NUM_CLAUSES 65536
@@ -10,7 +11,7 @@ Bool parseFile(const char* file, int* arr, int* numClauses, int maxNumClauses);
 int main(int argc, char** argv){
 
     Bool result;
-	int i;
+	int i,j;
 	int* sentence = malloc(MAX_NUM_CLAUSES*3*sizeof(int));
 	int numClauses = 0;
 

@@ -19,9 +19,9 @@ buildall: main.go solver/dpll.c solver/dpll.h
 install: main.go solver/dpll.c solver/dpll.h
 	go install
 
-# builds test cases in C into an executable for profiling
-ctest: solver/dpll.c solver/dpll.h solver/solver_test.c
-	gcc -Wpedantic -pg -o bin/solver_c_test solver/*.c
+# builds c binary only ()
+cbuild: solver/main.c
+	gcc -Wpedantic -pg -o bin/solver_c_main solver/*.c -lm
 
 # does gprof profiling- stores result in bin/profile.txt
 cprof: bin/solver_c_test

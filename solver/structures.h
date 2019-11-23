@@ -1,9 +1,13 @@
+#ifndef STRUCTURES_H
+#define STRUCTURES_H
+
 
 #include <stdio.h>
 
 typedef char Byte;
 
 typedef char Bool;
+
 /* macros for Boolean values */
 #define TRUE 1
 #define FALSE 0
@@ -28,7 +32,8 @@ typedef struct SentenceStack{
 
 /* SentenceStack Operations */
 void initSentenceStack(SentenceStack* stack, int maxNumVariables, int maxNumClauses);
-int* pushNewSentence(SentenceStack* stack, Clause** newClauses);
+int* pushNewEmptySentence(SentenceStack* stack, Clause** newClauses);
+void pushExistingSentence(SentenceStack* stack, Clause* sentence, int numClauses);
 int popSentence(SentenceStack* stack, Clause** poppedClauses);
 void destroySentenceStack(SentenceStack* stack);
 
@@ -58,6 +63,32 @@ typedef struct LiteralToClauseMap {
 void initLiteralToClauseMap(LiteralToClauseMap* map, int maxNumVariables, int maxNumClauses);
 void clearAllClauseLiterals(LiteralToClauseMap* map);
 void insertClauseLiterals(LiteralToClauseMap* map, Clause* clause);
-void destroy(LiteralToClauseMap* map);
+void destroyLiteralToClauseMap(LiteralToClauseMap* map);
+
+/* Variable VSIDSMap */
+/* Note: This will be implemented in the future as
+         a priority queue to provide sub-linear insertions
+         and instant identification of a branching variable
+         (will change bump factor instead of all scores)
+*/
+typedef struct VSIDSMap {
+    int* scorePQ;
+    int* scorePQInverse;
+    double* scores;
+    int maxLitVal;
+    double bumpGrowthFactor;
+    double bumpValue;
+    double scaleDownFactor;
+} VSIDSMap;
+static const double VSIDS_SCALE_DOWN_THRESHOLD = 1.0e32;
 
 
+/* VSIDSMap operations */
+void initVSIDSMap(VSIDSMap* map, int maxLitVal, double decayFactor, double initBumpValue);
+void clearVSIDSMap(VSIDSMap* map, double bumpValue);
+void bumpConflictClause(VSIDSMap* map, Clause* conflict);
+void printVSIDSMap(VSIDSMap* map, FILE* out);
+Bool isValidVSIDSMap(VSIDSMap* map);
+void destroyVSIDSMap(VSIDSMap* map);
+
+#endif /* STRUCTURES_H */
