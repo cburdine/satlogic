@@ -1,20 +1,30 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "dpll.h"
 #include <assert.h>
+#include <string.h>
+
+#include "dpll.h"
+#include "test/test.h"
 
 #define BUFF_SIZE 1024
 #define MAX_NUM_CLAUSES 65536
 
+Bool runTests();
 Bool parseFile(const char* file, int* arr, int* numClauses, int maxNumClauses);
 
 int main(int argc, char** argv){
+
+	if(argc > 1 && strcmp(argv[1],"-t") == 0 || strcmp(argv[1],"--test") == 0){
+		/* perform tests first */
+		runTests();
+		return 0;
+	}
 
     Bool result;
 	int i,j;
 	int* sentence = malloc(MAX_NUM_CLAUSES*3*sizeof(int));
 	int numClauses = 0;
-
+	
 	printf("parsing %d files...\n", argc - 1);
 
 	for(i = 1; i < argc; ++i){
@@ -23,9 +33,12 @@ int main(int argc, char** argv){
 		}else{
 			result = dpll3Sat(sentence, numClauses);
 			printf("[%s]: %d\n", argv[i], result);
+			
 		}
 	}
 
+
+	free(sentence);
     return 0;
 }
 
@@ -78,5 +91,12 @@ Bool parseFile(const char* file, int* arr, int* numClauses, int maxNumClauses){
 		return 0;
 	}
 
+}
+
+Bool runTests(){
+	int passed;
+	puts("Running tests...\n");
+	passed = runManifestTestGroups(stdout);
+	return passed;
 }
 

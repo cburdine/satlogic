@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+#include <assert.h>
 
 /* Clause Operations */
 void printClauses(Clause* clauses, int numClauses, FILE* out){
@@ -116,7 +117,7 @@ void initLiteralToClauseMap(LiteralToClauseMap* map, int maxNumVariables, int ma
 
     for(i = 0; i <= maxNumVariables; ++i){
         map->clauseOccurrences[i] = malloc(maxNumClauses * sizeof(Clause*));
-        map->clauseIndices = malloc(maxNumClauses * sizeof(Byte));
+        map->clauseIndices[i] = malloc(maxNumClauses * sizeof(Byte));
     }
 }
 
@@ -140,7 +141,7 @@ void insertClauseLiterals(LiteralToClauseMap* map, Clause* clause){
     }
 }
 
-void destroy(LiteralToClauseMap* map){
+void destroyLiteralToClauseMap(LiteralToClauseMap* map){
     int i;
 
     for(i = 0; i <= map->maxNumVariables; ++i){
@@ -156,6 +157,9 @@ void destroy(LiteralToClauseMap* map){
 void initVSIDSMap(VSIDSMap* map, int maxLitVal, double decayFactor, double initBumpValue){
     int i;
 
+    assert(initBumpValue > 0.0);
+    assert(decayFactor < 1.0 && decayFactor > 0.0);
+
     map->maxLitVal = maxLitVal;
     map->bumpGrowthFactor = 1.0 / decayFactor;
     map->bumpValue = initBumpValue;
@@ -170,7 +174,7 @@ void initVSIDSMap(VSIDSMap* map, int maxLitVal, double decayFactor, double initB
 
     /* initialize score map */
     for(i = 1; i <= maxLitVal; ++i){
-        map->scores[i] = 0.0;
+        map->scores[i] = initBumpValue;
     }
 
     /* initialize starting heap and heap inverse */
@@ -180,14 +184,65 @@ void initVSIDSMap(VSIDSMap* map, int maxLitVal, double decayFactor, double initB
     }
 }
 
-void clearVSIDSMap(VSIDSMap* map, double bumpValue){
-    int i;
+void setVSIDSMapToVarFrequencies(VSIDSMap* map, Clause* sentence, int numClauses){
+    int c, l, var, pqVarInd,
+        pqParentVar, pqParentVarInd;
+    double varScore, pqParentVarScore;
+    Bool promoted;
 
-    map->bumpValue *= map->bumpGrowthFactor;
+    /* clear vsids map */
+    clearVSIDSMap(map);
+
+    /* increment score by 1.0 for each occurrence of a variable */
+    for(c = 0; c < numClauses; ++c){
+        for(l = 0; l < CLAUSE_SIZE; ++l){
+            if(sentence[c].active[l]){
+                var = abs(sentence[c].literals[l]);
+                pqVarInd = map->scorePQInverse[var];
+                map->scores[var] += 1.0;
+                varScore = map->scores[var];
+                promoted = FALSE;
+                
+                /* update PQ & PQInverse */
+                pqParentVarInd = (pqVarInd-1)/2;
+                pqParentVar = map->scorePQ[pqParentVarInd];
+                pqParentVarScore = map->scores[pqParentVar];
+
+                while(pqVarInd > 0 && varScore > pqParentVarScore){
+
+                    /* demote parent */
+                    map->scorePQ[pqVarInd] = pqParentVar;
+                    map->scorePQInverse[pqParentVar] = pqVarInd;
+
+                    /* promote child index */
+                    pqVarInd = pqParentVarInd;
+                
+                    /* find next parent in PQ */
+                    pqParentVarInd = (pqVarInd-1)/2;
+                    pqParentVar = map->scorePQ[pqParentVarInd];
+                    pqParentVarScore = map->scores[pqParentVar];
+
+                    promoted = TRUE;
+                }
+
+                if(promoted){
+                    /* set child value */
+                    map->scorePQ[pqVarInd] = var;
+                    map->scorePQInverse[var] = pqVarInd;
+                }
+            }
+        }
+    }
+
+    assert(isValidVSIDSMap(map));
+}
+
+void clearVSIDSMap(VSIDSMap* map){
+    int i;
 
     /* re-initialize score map */
     for(i = 1; i <= map->maxLitVal; ++i){
-        map->scores[i] = 1.0;
+        map->scores[i] = 0.0;
     }
 
     /* re-initialize starting heap */
@@ -210,38 +265,45 @@ void bumpConflictClause(VSIDSMap* map, Clause* conflict){
         
         conflictVar = abs(conflict->literals[l]);
         pqConflictVarInd = map->scorePQInverse[conflictVar];
-        map->scores[conflictVar] += map->bumpValue;
+        if(map->scores[conflictVar] >= 0){
+            map->scores[conflictVar] += map->bumpValue;
+        } else {
+            map->scores[conflictVar] -= map->bumpValue;
+        }
         conflictVarScore = map->scores[conflictVar];
         promoted = FALSE;
 
         scaleDownMap |= (conflictVarScore > VSIDS_SCALE_DOWN_THRESHOLD);
         
-        /* update PQ & PQInverse */
-        pqParentVarInd = (pqConflictVarInd-1)/2;
-        pqParentVar = map->scorePQ[pqParentVarInd];
-        pqParentVarScore = map->scores[pqParentVar];
+        if(pqConflictVarInd > 0){
 
-        while(pqConflictVarInd > 0 && conflictVarScore > pqParentVarScore){
-
-            /* demote parent */
-            map->scorePQ[pqConflictVarInd] = pqParentVar;
-            map->scorePQInverse[pqParentVar] = pqConflictVarInd;
-
-            /* promote child index */
-            pqConflictVarInd = pqParentVarInd;
-        
-            /* find next parent in PQ */
+            /* update PQ & PQInverse */
             pqParentVarInd = (pqConflictVarInd-1)/2;
             pqParentVar = map->scorePQ[pqParentVarInd];
             pqParentVarScore = map->scores[pqParentVar];
 
-            promoted = TRUE;
-        }
+            while(pqConflictVarInd > 0 && conflictVarScore > pqParentVarScore){
 
-        if(promoted){
-            /* set child value */
-            map->scorePQ[pqConflictVarInd] = conflictVar;
-            map->scorePQInverse[conflictVar] = pqConflictVarInd;
+                /* demote parent */
+                map->scorePQ[pqConflictVarInd] = pqParentVar;
+                map->scorePQInverse[pqParentVar] = pqConflictVarInd;
+
+                /* promote child index */
+                pqConflictVarInd = pqParentVarInd;
+            
+                /* find next parent in PQ */
+                pqParentVarInd = (pqConflictVarInd-1)/2;
+                pqParentVar = map->scorePQ[pqParentVarInd];
+                pqParentVarScore = map->scores[pqParentVar];
+
+                promoted = TRUE;
+            }
+
+            if(promoted){
+                /* set child value */
+                map->scorePQ[pqConflictVarInd] = conflictVar;
+                map->scorePQInverse[conflictVar] = pqConflictVarInd;
+            }
         }
     }
 
@@ -252,6 +314,137 @@ void bumpConflictClause(VSIDSMap* map, Clause* conflict){
             map->scores[l] /= map->scaleDownFactor;
         }
     }
+}
+
+void deactivateVariable(VSIDSMap* map, int var){
+    
+    int pqVarInd, 
+        pqLeftChildVar, pqLeftChildVarInd,
+        pqRightChildVar, pqRightChildVarInd,
+        pqNextChildVar, pqNextChildVarInd;
+
+    double varScore, pqLeftChildVarScore, pqRightChildVarScore, pqNextChildVarScore;
+    Bool demoted;
+
+    assert(var > 0);
+
+    /* negate element in pq to deactivate it */
+    pqVarInd = map->scorePQInverse[var];
+    map->scores[var] *= -1.0;
+    varScore = map->scores[var];
+    demoted = FALSE;
+
+    assert(varScore < 0.0);
+
+    pqNextChildVarScore = 1.0;
+
+    while(pqNextChildVarScore > 0.0){
+
+        /* determine which child to promote */
+        pqLeftChildVarInd = (pqVarInd*2 + 1);
+        pqRightChildVarInd = (pqVarInd*2 + 2);
+
+        /* if both children are in the priority queue */
+        if(pqLeftChildVarInd < map->maxLitVal && pqRightChildVarInd < map->maxLitVal){
+
+            pqRightChildVar = map->scorePQ[pqRightChildVarInd];
+            pqLeftChildVar = map->scorePQ[pqLeftChildVarInd];
+            pqRightChildVarScore = map->scores[pqRightChildVar];
+            pqLeftChildVarScore = map->scores[pqLeftChildVar];
+
+            if(pqLeftChildVarScore > 0 && pqRightChildVarScore > 0){
+                pqNextChildVarInd = (pqLeftChildVarScore > pqRightChildVarScore)? pqLeftChildVarInd : pqRightChildVarInd;
+                pqNextChildVar = map->scorePQ[pqNextChildVarInd];
+            } else {
+                pqNextChildVarInd = (pqLeftChildVarScore > 0)? pqLeftChildVarInd : pqRightChildVarInd;
+                pqNextChildVar = map->scorePQ[pqNextChildVarInd];
+            }
+            
+        /* if left child is in the priority queue */
+        } else if(pqLeftChildVarInd < map->maxLitVal){
+
+            pqNextChildVarInd = pqLeftChildVarInd;
+            pqNextChildVar = map->scorePQ[pqNextChildVarInd];
+            pqNextChildVarScore = map->scores[pqNextChildVar];
+
+        /* if current element is a leaf */
+        } else {
+            pqNextChildVarScore = 0.0;
+        }
+
+        /* if selected child's variable is active, promote it */
+        if(pqNextChildVarScore > 0.0){
+
+            /* promote child */
+            map->scorePQ[pqVarInd] = pqNextChildVar;
+            map->scorePQInverse[pqNextChildVar] = pqVarInd;
+
+            /* demote parent */
+            pqVarInd = pqNextChildVarInd;
+
+            demoted = TRUE;
+        }
+    }
+
+    if(demoted){
+        /* set parent value */
+        map->scorePQ[pqVarInd] = var;
+        map->scorePQInverse[var] = pqVarInd;
+    }
+}
+
+void reactivateVariable(VSIDSMap* map, int var){
+    int l, pqVarInd,
+           pqParentVar, pqParentVarInd;
+    double varScore, pqParentVarScore;
+    Bool promoted;
+
+    assert(var > 0);
+    assert(map->scores[var] < 0);
+    
+    varScore = abs(map->scores[var]);
+    map->scores[var] = varScore;
+    pqVarInd = map->scorePQInverse[var];
+    
+
+    if(pqVarInd > 0){
+
+        /* update PQ & PQInverse */
+        pqParentVarInd = (pqVarInd-1)/2;
+        pqParentVar = map->scorePQ[pqParentVarInd];
+        pqParentVarScore = map->scores[pqParentVar];
+
+        while(pqVarInd > 0 && varScore > pqParentVarScore){
+
+            /* demote parent */
+            map->scorePQ[pqVarInd] = pqParentVar;
+            map->scorePQInverse[pqParentVar] = pqVarInd;
+
+            /* promote child index */
+            pqVarInd = pqParentVarInd;
+        
+            /* find next parent in PQ */
+            pqParentVarInd = (pqVarInd-1)/2;
+            pqParentVar = map->scorePQ[pqParentVarInd];
+            pqParentVarScore = map->scores[pqParentVar];
+
+            promoted = TRUE;
+        }
+
+        if(promoted){
+            /* set child value */
+            map->scorePQ[pqVarInd] = var;
+            map->scorePQInverse[var] = pqVarInd;
+        }
+    }
+
+}
+
+
+void destroyVSIDSMap(VSIDSMap* map){
+    free(map->scorePQ);
+    free(map->scorePQInverse);
+    free(map->scores);
 }
 
 void printVSIDSMap(VSIDSMap* map, FILE* out){
@@ -271,7 +464,8 @@ void printVSIDSMap(VSIDSMap* map, FILE* out){
 Bool isValidVSIDSMap(VSIDSMap* map){
     int i;
     for(i = 1; i < map->maxLitVal; ++i){
-        if(map->scores[map->scorePQ[i]] > map->scores[map->scorePQ[(i-1)/2]]){
+        if(map->scores[map->scorePQ[i]] > 0 && 
+           map->scores[map->scorePQ[i]] > map->scores[map->scorePQ[(i-1)/2]]){
             return FALSE;
         }
     }
@@ -279,9 +473,43 @@ Bool isValidVSIDSMap(VSIDSMap* map){
     return TRUE;
 }
 
-void destroyVSIDSMap(VSIDSMap* map){
-    free(map->scorePQ);
-    free(map->scorePQInverse);
-    free(map->scores);
+/* LiteralAssignmentStack operations */
+
+void initLiteralAssignmentStack(LiteralAssignmentStack* stack, int maxLitVal){
+    int i;
+
+    stack->maxNumVariables = maxLitVal-1;
+    stack->top = 0;
+    stack->variableAssignments = malloc(sizeof(int*) * stack->maxNumVariables);
+    stack->numAssignments = malloc(sizeof(int) * stack->maxNumVariables);
+
+    for(i = 0; i < stack->maxNumVariables; ++i ){
+        stack->variableAssignments[i] = malloc(sizeof(int) * stack->maxNumVariables);
+        stack->numAssignments[i] = 0;
+    }
 }
 
+void clearLiteralAssignmentStack(LiteralAssignmentStack* stack){
+    int i;
+
+    for(i = 0; i < stack->maxNumVariables; ++i){
+        stack->numAssignments[i] = 0;
+    }
+    stack->top = 0;
+}
+
+void addLiteral(LiteralAssignmentStack* stack, int literal){
+    stack->variableAssignments[stack->top][stack->numAssignments[stack->top]] = literal;
+    ++(stack->numAssignments[stack->top]);
+}
+
+void destroyLiteralAssignmentStack(LiteralAssignmentStack* stack){
+    int i;
+
+    for(i = 0; i < stack->maxNumVariables; ++i){
+        free(stack->variableAssignments[i]);
+    }
+
+    free(stack->variableAssignments);
+    free(stack->numAssignments);
+}

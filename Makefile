@@ -19,12 +19,23 @@ buildall: main.go solver/dpll.c solver/dpll.h
 install: main.go solver/dpll.c solver/dpll.h
 	go install
 
-# builds c binary only ()
+# test stub here
+
+
+# builds c binary only
 cbuild: solver/main.c
 	gcc -Wpedantic -pg -o bin/solver_c_main solver/*.c -lm
 
+#builds c in debug/sanitize mode
+cdebug: solver/main.c
+	gcc -Wpedantic -pg -fsanitize=address -o bin/solver_c_main solver/*.c -lm
+
+# runs test cases on c binary:
+ctest: bin/solver_c_main
+	./bin/solver_c_main --test
+
 # does gprof profiling- stores result in bin/profile.txt
-cprof: bin/solver_c_test
+cprofile: bin/solver_c_test
 	./bin/solver_c_test $(BENCHMARKDATA) > /dev/null
-	gprof ./bin/solver_c_test ./gmon.out > ./bin/profile.txt
+	gprof ./bin/solver_c_main ./gmon.out > ./bin/profile.txt
 	rm -f gmon.out

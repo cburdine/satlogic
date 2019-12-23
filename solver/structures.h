@@ -85,10 +85,28 @@ static const double VSIDS_SCALE_DOWN_THRESHOLD = 1.0e32;
 
 /* VSIDSMap operations */
 void initVSIDSMap(VSIDSMap* map, int maxLitVal, double decayFactor, double initBumpValue);
-void clearVSIDSMap(VSIDSMap* map, double bumpValue);
+void clearVSIDSMap(VSIDSMap* map);
+void setVSIDSMapToVarFrequencies(VSIDSMap* map, Clause* sentence, int numClauses);
 void bumpConflictClause(VSIDSMap* map, Clause* conflict);
+void deactivateVariable(VSIDSMap* map, int var);
+void reactivateVariable(VSIDSMap* map, int var);
+void destroyVSIDSMap(VSIDSMap* map);
+
 void printVSIDSMap(VSIDSMap* map, FILE* out);
 Bool isValidVSIDSMap(VSIDSMap* map);
-void destroyVSIDSMap(VSIDSMap* map);
+
+typedef struct LiteralAssignmentStack {
+    int maxNumVariables;
+    int top;
+    int** variableAssignments;
+    int* numAssignments;
+} LiteralAssignmentStack;
+
+void initLiteralAssignmentStack(LiteralAssignmentStack* stack, int maxLitVal);
+void clearLiteralAssignmentStack(LiteralAssignmentStack* stack);
+void addLiteral(LiteralAssignmentStack* stack, int literal);
+inline void push(LiteralAssignmentStack* stack){ ++(stack->top); }
+inline void pop(LiteralAssignmentStack* stack){ --(stack->top); }
+void destroyLiteralAssignmentStack(LiteralAssignmentStack* stack);
 
 #endif /* STRUCTURES_H */
