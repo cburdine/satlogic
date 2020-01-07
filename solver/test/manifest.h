@@ -9,11 +9,13 @@
 #define C_UNIT_TEST_MANIFEST_H
 
 #include "testGroups/structures_test.h"
+#include "testGroups/dpll_test.h"
 
 static TestGroup* TEST_GROUP_MANIFEST[] = {
     
     /* list reference to all TestGroups here */
     &STRUCTURES_TESTS,
+    &DPLL_TESTS,
 
     END_OF_MANIFEST
 };

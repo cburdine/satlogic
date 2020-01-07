@@ -10,7 +10,7 @@ void printClauses(Clause* clauses, int numClauses, FILE* out){
     int c,l;
     for(c = 0; c < numClauses; ++c){
         fputs("( ", out);
-        if(clauses[c].numActiveLiterals){
+        if(clauses[c].numActiveLiterals > 0){
             for(l = 0; l < CLAUSE_SIZE; ++l){
                 if(clauses[c].active[l]){
                     fprintf(out, "%3d ", clauses[c].literals[l]);
@@ -39,29 +39,44 @@ void initSentenceStack(SentenceStack* stack, int maxNumVariables, int maxNumClau
     for(i = 0 ; i < stack->maxStackheight; ++i){
         stack->sentences[i] = malloc(sizeof(Clause)*maxNumClauses);
     }
+    stack->poppedSentence = malloc(sizeof(Clause)*maxNumClauses);
 
     stack->top = -1;
 }
 
 int* pushNewEmptySentence(SentenceStack* stack, Clause** newClauses){
-    
+
+    int* newSentenceLen;
+
     ++(stack->top);
     *newClauses = (stack->sentences[stack->top]);
-    return &(stack->sentenceLengths[stack->top]);
+    newSentenceLen = &(stack->sentenceLengths[stack->top]);
+    *newSentenceLen = 0;
+    return newSentenceLen;
 }
 
-void pushExistingSentence(SentenceStack* stack, Clause* sentence, int numClauses){
+
+void pushSentenceCopy(SentenceStack* stack, Clause* sentence, int numClauses){
+    int c;
+
     ++(stack->top);
-    free(stack->sentences[stack->top]);
-    stack->sentences[stack->top] = sentence;
+    for(c = 0; c < numClauses; ++c){
+        stack->sentences[stack->top][c] = sentence[c];
+    }
     stack->sentenceLengths[stack->top] = numClauses;
 }
 
-int popSentence(SentenceStack* stack, Clause** poppedClauses){
-    *poppedClauses = (stack->sentences[stack->top]);
+void popSentence(SentenceStack* stack){
+    Clause* tmpSentencePtr;
 
-    // decrement top after returning current top:
-    return stack->sentenceLengths[(stack->top)--];
+    /* swap poppedSentence with top of stack */
+    tmpSentencePtr = stack->poppedSentence;
+    stack->poppedSentence = (stack->sentences[stack->top]);
+    stack->sentences[stack->top] = tmpSentencePtr;
+
+    stack->popedSentenceLen = stack->sentenceLengths[stack->top];
+    
+    --(stack->top);
 }
 
 void destroySentenceStack(SentenceStack* stack){
@@ -73,12 +88,14 @@ void destroySentenceStack(SentenceStack* stack){
 
     free(stack->sentences);
     free(stack->sentenceLengths);
+    free(stack->poppedSentence);
 }
 
 
 
 /* LiteralInstanceSet Operations */
 void initLiteralInstanceSet(LiteralInstanceSet* lset, int maxLitVal){
+
     ++maxLitVal;
     lset->maxLitVal = maxLitVal;
     lset->contains = calloc((maxLitVal),sizeof(Bool));
@@ -87,12 +104,16 @@ void initLiteralInstanceSet(LiteralInstanceSet* lset, int maxLitVal){
 }
 
 void insertLiteral(LiteralInstanceSet *lset, int literal){
+
+    assert(abs(literal) > 0);
+    assert(abs(literal) <= lset->maxLitVal);
+
     if(!lset->contains[abs(literal)]){
         
         lset->contains[abs(literal)] = TRUE;
         lset->literals[lset->size] = literal;
+        ++(lset->size);
     }
-    ++(lset->size);
 }
 
 void clearAllLiterals(LiteralInstanceSet* lset){
@@ -108,7 +129,6 @@ void destroyLiteralInstanceSet(LiteralInstanceSet* lset){
 /* LiteralToClauseMap  operations */
 void initLiteralToClauseMap(LiteralToClauseMap* map, int maxNumVariables, int maxNumClauses){
     int i;
-    
     map->maxNumVariables = maxNumVariables;
     map->maxNumClauses = maxNumClauses;
     map-> clauseOccurrences = malloc((maxNumVariables+1) * sizeof(Clause**));
@@ -151,6 +171,7 @@ void destroyLiteralToClauseMap(LiteralToClauseMap* map){
 
     free(map->clauseOccurrences);
     free(map->clauseIndices);
+    free(map->literalFrequency);
 }
 
 /* VSIDSMap operations */
@@ -198,12 +219,12 @@ void setVSIDSMapToVarFrequencies(VSIDSMap* map, Clause* sentence, int numClauses
         for(l = 0; l < CLAUSE_SIZE; ++l){
             if(sentence[c].active[l]){
                 var = abs(sentence[c].literals[l]);
-                pqVarInd = map->scorePQInverse[var];
+                pqVarInd = map->scorePQInverse[var]; /* BUFFER ERROR HERE */
                 map->scores[var] += 1.0;
                 varScore = map->scores[var];
                 promoted = FALSE;
-                
-                /* update PQ & PQInverse */
+
+                /* determine parent in PQ */
                 pqParentVarInd = (pqVarInd-1)/2;
                 pqParentVar = map->scorePQ[pqParentVarInd];
                 pqParentVarScore = map->scores[pqParentVar];
@@ -264,19 +285,19 @@ void bumpConflictClause(VSIDSMap* map, Clause* conflict){
     for(l = 0; l < CLAUSE_SIZE; ++l){
         
         conflictVar = abs(conflict->literals[l]);
-        pqConflictVarInd = map->scorePQInverse[conflictVar];
-        if(map->scores[conflictVar] >= 0){
-            map->scores[conflictVar] += map->bumpValue;
-        } else {
-            map->scores[conflictVar] -= map->bumpValue;
-        }
-        conflictVarScore = map->scores[conflictVar];
-        promoted = FALSE;
 
-        scaleDownMap |= (conflictVarScore > VSIDS_SCALE_DOWN_THRESHOLD);
-        
-        if(pqConflictVarInd > 0){
+        if(conflictVar){
+            pqConflictVarInd = map->scorePQInverse[conflictVar];
+            if(map->scores[conflictVar] >= 0){
+                map->scores[conflictVar] += map->bumpValue;
+            } else {
+                map->scores[conflictVar] -= map->bumpValue;
+            }
+            conflictVarScore = map->scores[conflictVar];
+            promoted = FALSE;
 
+            scaleDownMap |= (conflictVarScore > VSIDS_SCALE_DOWN_THRESHOLD);
+            
             /* update PQ & PQInverse */
             pqParentVarInd = (pqConflictVarInd-1)/2;
             pqParentVar = map->scorePQ[pqParentVarInd];
@@ -400,8 +421,9 @@ void reactivateVariable(VSIDSMap* map, int var){
     Bool promoted;
 
     assert(var > 0);
-    assert(map->scores[var] < 0);
+    assert(map->scores[var] < 0.0);
     
+
     varScore = abs(map->scores[var]);
     map->scores[var] = varScore;
     pqVarInd = map->scorePQInverse[var];
@@ -437,7 +459,6 @@ void reactivateVariable(VSIDSMap* map, int var){
             map->scorePQInverse[var] = pqVarInd;
         }
     }
-
 }
 
 
@@ -464,8 +485,14 @@ void printVSIDSMap(VSIDSMap* map, FILE* out){
 Bool isValidVSIDSMap(VSIDSMap* map){
     int i;
     for(i = 1; i < map->maxLitVal; ++i){
+        /* ensure priority queue topology is correct */
         if(map->scores[map->scorePQ[i]] > 0 && 
            map->scores[map->scorePQ[i]] > map->scores[map->scorePQ[(i-1)/2]]){
+            return FALSE;
+        }
+
+        /* ensure inverse-lookup table is correct */
+        if(map->scorePQInverse[map->scorePQ[i]] != i){
             return FALSE;
         }
     }
@@ -478,10 +505,14 @@ Bool isValidVSIDSMap(VSIDSMap* map){
 void initLiteralAssignmentStack(LiteralAssignmentStack* stack, int maxLitVal){
     int i;
 
-    stack->maxNumVariables = maxLitVal-1;
-    stack->top = 0;
+    assert(maxLitVal > 0);
+
+    stack->maxNumVariables = 2*(maxLitVal+2);
+    stack->top = -1;
     stack->variableAssignments = malloc(sizeof(int*) * stack->maxNumVariables);
     stack->numAssignments = malloc(sizeof(int) * stack->maxNumVariables);
+    stack->branchVariables = malloc(sizeof(int) * stack->maxNumVariables);
+    stack->onSecondBranch = malloc(sizeof(Bool) * stack->maxNumVariables);
 
     for(i = 0; i < stack->maxNumVariables; ++i ){
         stack->variableAssignments[i] = malloc(sizeof(int) * stack->maxNumVariables);
@@ -495,7 +526,7 @@ void clearLiteralAssignmentStack(LiteralAssignmentStack* stack){
     for(i = 0; i < stack->maxNumVariables; ++i){
         stack->numAssignments[i] = 0;
     }
-    stack->top = 0;
+    stack->top = -1;
 }
 
 void addLiteral(LiteralAssignmentStack* stack, int literal){
@@ -512,4 +543,92 @@ void destroyLiteralAssignmentStack(LiteralAssignmentStack* stack){
 
     free(stack->variableAssignments);
     free(stack->numAssignments);
+    free(stack->branchVariables);
+    free(stack->onSecondBranch);
+}
+
+void backtrackToNextStackFrame(LiteralAssignmentStack* stack, VSIDSMap* map){
+    int newTopInd, numUnitVars, i;
+
+    newTopInd = stack->top;
+    while(newTopInd >= 0 && 
+        (!(stack->branchVariables[newTopInd]) || stack->onSecondBranch[newTopInd]) ){
+
+        /* reactivate variables in VSIDS map */
+        numUnitVars = stack->numAssignments[newTopInd];
+        
+        for(i = 0; i < numUnitVars; ++i){
+            reactivateVariable(map, abs(stack->variableAssignments[newTopInd][i]));
+        }
+
+        /* reactivate branch variable */
+        if(stack->branchVariables[newTopInd]){
+            reactivateVariable(map, abs(stack->branchVariables[newTopInd]));
+        }
+
+        --newTopInd;
+    }
+    
+    if(newTopInd >= 0){
+        /* toggle branch that we backtrack to */
+        stack->onSecondBranch[newTopInd] = TRUE;
+        stack->branchVariables[newTopInd] *= -1;
+    }
+
+    stack->top = newTopInd;
+}
+
+void pushNewFrame(LiteralAssignmentStack* stack){
+    ++(stack->top);
+    stack->numAssignments[stack->top] = 0;
+    stack->branchVariables[stack->top] = 0;
+    stack->onSecondBranch[stack->top] = FALSE;
+}
+
+void recordVariableAssignments(LiteralAssignmentStack* stack, Bool* solnArr){
+    int stackInd, litInd, assignedVar;
+
+    for(stackInd = stack->top; stackInd >= 0; --stackInd){
+        
+        /* write branching variable assignments */
+        assignedVar = stack->branchVariables[stackInd];
+        if(assignedVar){
+            solnArr[abs(assignedVar)] = (assignedVar > 0);
+        }
+
+        /* write unit propagation variable assignments */
+        for(litInd = 0; litInd < stack->numAssignments[stackInd]; ++litInd){
+            assignedVar = stack->variableAssignments[stackInd][litInd];
+            solnArr[abs(assignedVar)] = (assignedVar > 0);
+        }
+    }
+}
+
+void printLiteralAssignmentStack(LiteralAssignmentStack* stack, FILE* out){
+    int i,j, var;
+
+    if(stack->top < 0){
+        fputs("<EMPTY>\n", out);
+        return;
+    }
+
+    for(i = stack->top; i >= 0; --i){
+        fprintf(out, "[%d] ", i);
+        for(j = 0; j < stack->numAssignments[i]; ++j){
+            var = stack->variableAssignments[i][j];
+            fprintf(out, "%d=%c ", abs(var), (var > 0)? 'T' : 'F');
+        }
+
+        var = stack->branchVariables[i];
+        if(var == 0){
+            fputs("| ?", out);
+        }else {
+            fprintf(out, "| %d=%c %s", 
+                abs(var), 
+                (var > 0)? 'T' : 'F', 
+                stack->onSecondBranch[i]? "(b2)" :""
+            );
+        }
+        fputs("\n", out);
+    }
 }

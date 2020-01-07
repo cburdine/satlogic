@@ -5,13 +5,11 @@
 #include <stdlib.h>
 #include "structures.h"
 
-/* assumes all vars in clauses are deduped */
-//Bool dpll(Clause* clauses, int numClauses, int numVariables);
-
 /* improvement upon old dpll */
-Bool dpllStatic(Clause* clauses, int numClauses, int numVariables);
+Bool dpllStatic(Clause* clauses, int numClauses, int numVariables, Bool solnArr[]);
 
-/* dedups and converts variables into clauses */
-Bool dpll3Sat(int sentence[], int sentenceLen);
+/* dedups and converts variables into clauses, storing result
+   in solnArr */
+Bool dpll3Sat(int sentence[], int sentenceLen, Bool solnArr[]);
 
 #endif /* DPLL_H */

@@ -159,14 +159,16 @@
 
 
 /* improvement upon old dpll */
-Bool dpllStatic(Clause* clauses, int numClauses, int numVariables){
+Bool dpllStatic(Clause* clauses, int numClauses, int numVariables, Bool* solnArr){
 
     /* vsids decay & bump factor */
-    static const double VSIDS_DECAY_FACTOR = 0.5;
+    static const double VSIDS_DECAY_FACTOR = 0.95;
     static const double VSIDS_INIT_BUMP_VALUE = 1.0;
     
     /* aux variables */
-    int c, l, l2, clauseLit, pureLitInd, pureLit, currentClauseInd, branchVar;
+    int c, l, l2,
+        clauseLit, pureLitInd, pureLit, pureLitFrequency,
+        currentClauseInd, branchVar, numNonEmptyClauses;
     
     /* iteration variables */
     int *numNextClausesAPtr, numNextClausesA, *numNextClausesBPtr, numNextClausesB;
@@ -176,6 +178,7 @@ Bool dpllStatic(Clause* clauses, int numClauses, int numVariables){
     /* declare useful data structures */
     LiteralInstanceSet pureLiterals;
     LiteralToClauseMap unitPropMap;
+    LiteralAssignmentStack assignmentStack;
     VSIDSMap vsidsMap;
 
     assert(numClauses > 0);
@@ -185,30 +188,40 @@ Bool dpllStatic(Clause* clauses, int numClauses, int numVariables){
     SentenceStack sentenceStack;
     initSentenceStack(&sentenceStack, numVariables, numClauses);
     initLiteralInstanceSet(&pureLiterals, numVariables+1);
+    initLiteralAssignmentStack(&assignmentStack, numVariables);
     initVSIDSMap(&vsidsMap, numVariables, VSIDS_DECAY_FACTOR, VSIDS_INIT_BUMP_VALUE);
 
     /* populate VSIDS map with initial frequencies */
     setVSIDSMapToVarFrequencies(&vsidsMap, clauses, numClauses);
-    printVSIDSMap(&vsidsMap, stdout);
 
     /* generate ClauseToLiteral map */
     initLiteralToClauseMap(&unitPropMap, numVariables, numClauses);
 
     /* push initial sentence on stack */
-    pushExistingSentence(&sentenceStack, clauses, numClauses);
+    pushSentenceCopy(&sentenceStack, clauses, numClauses);
 
-    /* iterate until search tree is exhausted: */
+    /* iterate until search tree is exhausted or solution found: */
     foundSoln = FALSE;
     while(!foundSoln && sentenceStack.top >= 0){
 
-        /* pop a sentence from the stack */
-        numClauses = popSentence(&sentenceStack, &clauses);
 
+        /* pop a sentence from the stack; allow for new variable assignments */
+        popSentence(&sentenceStack);
+        clauses = sentenceStack.poppedSentence;
+        numClauses = sentenceStack.popedSentenceLen;
+
+        /*
+        printLiteralAssignmentStack(&assignmentStack, stdout);
+        printClauses(clauses, numClauses, stdout);
+        printf("Sentences Remaining: %d\n\n", (sentenceStack.top+1));
+        */
+
+        /* clear data structures */
         clearAllLiterals(&pureLiterals);
         clearAllClauseLiterals(&unitPropMap);
         backtrack = FALSE;
 
-
+        /* identify pure literal and empty clauses */
         for(c = 0; c < numClauses; ++c){
             if(clauses[c].numActiveLiterals > 0){
 
@@ -227,34 +240,44 @@ Bool dpllStatic(Clause* clauses, int numClauses, int numVariables){
 
             } else {
                 /* if an empty clause is found, backtrack */
-                bumpConflictClause(&vsidsMap, currentClause);
+                bumpConflictClause(&vsidsMap, &clauses[c]);
                 backtrack = TRUE;
             }
         }
 
-        printClauses(clauses, numClauses, stdout);
-
         if(!backtrack){
 
-            /* perform literal unit propagation */
+            pushNewFrame(&assignmentStack);
+
+            /* perform unit propagation */
             for(pureLitInd = 0; pureLitInd < pureLiterals.size && !backtrack; ++pureLitInd){
+
+                /* add pure literal to stack of assigned variables */
                 pureLit = pureLiterals.literals[pureLitInd];
                 litStatus = pureLiterals.contains[pureLitInd];
+                pureLitFrequency = unitPropMap.literalFrequency[abs(pureLit)];
 
-                for(l = 0; l < unitPropMap.literalFrequency[l] && !backtrack; ++l){
+                /* record pure literal assignment */
+                addLiteral(&assignmentStack, pureLit);
+                deactivateVariable(&vsidsMap, abs(pureLit));
+
+                for(l = 0; l < pureLitFrequency && !backtrack; ++l){
                     currentClause = unitPropMap.clauseOccurrences[abs(pureLit)][l];
                     currentClauseInd = unitPropMap.clauseIndices[abs(pureLit)][l];
+                    clauseLit = currentClause->literals[currentClauseInd];
 
-                    if(pureLit == currentClause->literals[currentClauseInd]){
+                    if(pureLit == clauseLit){
                         /* exclude clause entirely */
                         currentClause->numActiveLiterals = 0;
-                    } else {
-                        /* eliminate literal */
+
+                    } else if(pureLit == -1*clauseLit){
+
+                        /* otherwise, eliminate just the literal */
                         currentClause->active[currentClauseInd] = FALSE;
                         --(currentClause->numActiveLiterals);
 
+                        /* if clause becomes empty, update vsids map and backtrack */
                         if(currentClause->numActiveLiterals == 0){
-                            /* if clause is empty, update vsids map and backtrack */
                             bumpConflictClause(&vsidsMap, currentClause);
                             backtrack = TRUE;
 
@@ -262,40 +285,53 @@ Bool dpllStatic(Clause* clauses, int numClauses, int numVariables){
                             /* find and record new pure literal */
                             for(l2 = 0; l2 < CLAUSE_SIZE && !currentClause->active[l2]; ++l2);
                             insertLiteral(&pureLiterals, currentClause->literals[l2]);
+
                         }
                     }
                 }
             }
         }
+        
+        if(backtrack){
+        
+            backtrackToNextStackFrame(&assignmentStack, &vsidsMap);
 
-        printClauses(clauses, numClauses, stdout);
+        }else{
 
-        if(!backtrack){
-            /* perform branching assignment based variable with most instances */
+            /* perform branching assignment based variable chosen by the VSIDS heuristic */
             branchVar = vsidsMap.scorePQ[0];
-            printf("branch variable: %d\n", branchVar);
-            printVSIDSMap(&vsidsMap, stdout);
+            
+            if(vsidsMap.scores[branchVar] > 0.0){
+                deactivateVariable(&vsidsMap, branchVar);
+                setBranchLiteral(&assignmentStack, branchVar);
+            } else {
+                branchVar = 0;
+            }
 
             /* create new sentences to hold branched sentence */
-            numNextClausesAPtr = pushNewEmptySentence(&sentenceStack, &nextClausesA);
             numNextClausesBPtr = pushNewEmptySentence(&sentenceStack, &nextClausesB);
+            numNextClausesAPtr = pushNewEmptySentence(&sentenceStack, &nextClausesA);
 
-            /* perform branching variable assignment: A := T, B := F */
+            /* perform branching variable assignment: 
+                A is where branchVar := T,
+                B is where branchVar := F 
+            */
             numNextClausesA = 0;
             numNextClausesB = 0;
 
             for(c = 0; c < numClauses; ++c){
-                if(clauses[c].numActiveLiterals){
+                if(clauses[c].numActiveLiterals > 0){
 
                     excludeClause = FALSE;
                     for(l = 0; l < CLAUSE_SIZE && !excludeClause; ++l){
                         if(clauses[c].active[l]){
+
                             clauseLit = clauses[c].literals[l];
                             if(clauseLit == branchVar){
                                 /* Copy clause into B with eliminated literal & exclude in A*/
-                                printf("numNextClausesB: %d\n", numNextClausesB);
                                 nextClausesB[numNextClausesB] = clauses[c];
                                 nextClausesB[numNextClausesB].active[l] = FALSE;
+                                --(nextClausesB[numNextClausesB].numActiveLiterals);
                                 ++numNextClausesB;
                                 excludeClause = TRUE;
 
@@ -303,6 +339,7 @@ Bool dpllStatic(Clause* clauses, int numClauses, int numVariables){
                                 /* Copy clause into A with eliminated literal & exclude in B*/
                                 nextClausesA[numNextClausesA] = clauses[c];
                                 nextClausesA[numNextClausesA].active[l] = FALSE;
+                                --(nextClausesA[numNextClausesA].numActiveLiterals);
                                 ++numNextClausesA;
                                 excludeClause = TRUE;
                             }
@@ -323,26 +360,33 @@ Bool dpllStatic(Clause* clauses, int numClauses, int numVariables){
                 /* return TRUE */
                 foundSoln = TRUE;
             } else if(numNextClausesB == 0){
-                /* return TRUE */
+                /* return TRUE, signal that the second branch is the satisfying assignment */
+                toggleStackFrameBranch(&assignmentStack);
                 foundSoln = TRUE;
             } else {
                 *numNextClausesAPtr = numNextClausesA;
                 *numNextClausesBPtr = numNextClausesB;
             }
         }
+    }
 
+    /* write variable assignments if soln is found */
+    if(foundSoln){
+        recordVariableAssignments(&assignmentStack, solnArr);
     }
 
     /* clean up data structures */
+    destroySentenceStack(&sentenceStack);
     destroyLiteralInstanceSet(&pureLiterals);
     destroyLiteralToClauseMap(&unitPropMap);
+    destroyLiteralAssignmentStack(&assignmentStack);
     destroyVSIDSMap(&vsidsMap);
 
     return foundSoln;
 }
 
 /* dedups and converts variables into clauses */
-Bool dpll3Sat(int sentence[], int numClauses){
+Bool dpll3Sat(int sentence[], int numClauses, Bool solnArr[]){
     int c,l,lu,v, maxVar;
     Bool copyClause, activeLiteral, result;
     Clause* initClauses;
@@ -377,6 +421,7 @@ Bool dpll3Sat(int sentence[], int numClauses){
                     break;
                 }
             }
+
             initClauses[numInitClauses].active[l] = activeLiteral;
         }
 
@@ -385,10 +430,13 @@ Bool dpll3Sat(int sentence[], int numClauses){
             ++numInitClauses;
         }
     }
-    
+
+    /* clear solnArr values */
+    for(v = 0; v <= maxVar; ++v){ solnArr[v] = 0; }
+
     /* dpll-solve set of clauses */
-    result = dpllStatic(initClauses, numInitClauses, maxVar);
-    
+    result = dpllStatic(initClauses, numInitClauses, maxVar, solnArr);
+
     free(initClauses);
 
     return result;

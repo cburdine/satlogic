@@ -5,7 +5,6 @@
 #include <stdio.h>
 
 typedef char Byte;
-
 typedef char Bool;
 
 /* macros for Boolean values */
@@ -27,14 +26,17 @@ void printClauses(Clause* clauses, int numClauses, FILE* out);
 typedef struct SentenceStack{
     Clause** sentences;
     int* sentenceLengths;
-    int top, maxStackheight;
+    int top, 
+        maxStackheight, 
+        popedSentenceLen;
+    Clause* poppedSentence;
 } SentenceStack;
 
 /* SentenceStack Operations */
 void initSentenceStack(SentenceStack* stack, int maxNumVariables, int maxNumClauses);
 int* pushNewEmptySentence(SentenceStack* stack, Clause** newClauses);
-void pushExistingSentence(SentenceStack* stack, Clause* sentence, int numClauses);
-int popSentence(SentenceStack* stack, Clause** poppedClauses);
+void pushSentenceCopy(SentenceStack* stack, Clause* sentence, int numClauses);
+void popSentence(SentenceStack* stack);
 void destroySentenceStack(SentenceStack* stack);
 
 /* LiteralInstanceSet structure */
@@ -51,6 +53,10 @@ void insertLiteral(LiteralInstanceSet *lset, int literal);
 void clearAllLiterals(LiteralInstanceSet* lset);
 void destroyLiteralInstanceSet(LiteralInstanceSet* lset);
 
+static Bool setContainsLiteral(LiteralInstanceSet* lset, int literal){
+    return lset->contains[(literal < 0? -1 * literal : literal)];
+}
+
 /* LiteralToClauseMap */
 typedef struct LiteralToClauseMap {
     int maxNumVariables, maxNumClauses;
@@ -66,11 +72,6 @@ void insertClauseLiterals(LiteralToClauseMap* map, Clause* clause);
 void destroyLiteralToClauseMap(LiteralToClauseMap* map);
 
 /* Variable VSIDSMap */
-/* Note: This will be implemented in the future as
-         a priority queue to provide sub-linear insertions
-         and instant identification of a branching variable
-         (will change bump factor instead of all scores)
-*/
 typedef struct VSIDSMap {
     int* scorePQ;
     int* scorePQInverse;
@@ -95,18 +96,37 @@ void destroyVSIDSMap(VSIDSMap* map);
 void printVSIDSMap(VSIDSMap* map, FILE* out);
 Bool isValidVSIDSMap(VSIDSMap* map);
 
+
 typedef struct LiteralAssignmentStack {
     int maxNumVariables;
     int top;
     int** variableAssignments;
     int* numAssignments;
+    int* branchVariables;
+    Bool* onSecondBranch;
+
 } LiteralAssignmentStack;
 
 void initLiteralAssignmentStack(LiteralAssignmentStack* stack, int maxLitVal);
 void clearLiteralAssignmentStack(LiteralAssignmentStack* stack);
 void addLiteral(LiteralAssignmentStack* stack, int literal);
-inline void push(LiteralAssignmentStack* stack){ ++(stack->top); }
-inline void pop(LiteralAssignmentStack* stack){ --(stack->top); }
+void pushNewFrame(LiteralAssignmentStack* stack);
 void destroyLiteralAssignmentStack(LiteralAssignmentStack* stack);
+void backtrackToNextStackFrame(LiteralAssignmentStack* stack, VSIDSMap* literalMap);
+void recordVariableAssignments(LiteralAssignmentStack* stack, Bool* solnArr);
+void printLiteralAssignmentStack(LiteralAssignmentStack* stack, FILE* out);
+
+static void toggleStackFrameBranch(LiteralAssignmentStack* stack){
+    stack->onSecondBranch[stack->top] = !(stack->onSecondBranch[stack->top]);
+    stack->branchVariables[stack->top] *= -1;
+}
+
+static void setBranchLiteral(LiteralAssignmentStack* stack, int branchLiteral){
+    stack->branchVariables[stack->top] = branchLiteral;
+}
+
+static void popFrame(LiteralAssignmentStack* stack){ 
+    --(stack->top);
+}
 
 #endif /* STRUCTURES_H */
