@@ -10,7 +10,7 @@
 #define MAX_NUM_CLAUSES 65536
 
 Bool runTests();
-int abs3Max(int a, int b, int c);
+int arrAbsMax(int* arr, int arrLen);
 Bool parseFile(const char* file, int* arr, int* numClauses, int* maxVar, int maxNumClauses);
 
 int main(int argc, char** argv){
@@ -33,7 +33,12 @@ int main(int argc, char** argv){
 	for(i = 1; i < argc; ++i){
 		if(!parseFile(argv[i], sentence, &numClauses, &maxVar, MAX_NUM_CLAUSES)){
 			printf("unable to parse file: %s\n", argv[i]);
-
+			
+			/* shutdown gracefully if parser error occurs*/
+			free(sentence);
+			free(solution);
+			return 1;
+			
 		}else{
 			result = dpll3Sat(sentence, numClauses, solution);
 			if(result){
@@ -79,12 +84,12 @@ Bool parseFile(const char* file, int* arr, int* numClauses, int* maxVar, int max
 			sscanf(lineBuffer, "%d %d %d %d", &vars[0], &vars[1], &vars[2], &vars[3]);
 
 			if(vars[0] && vars[1] && vars[2] && !vars[3]){
-				/* printf("V: %d %d %d\n", vars[0], vars[1], vars[2]); */
+				
 				arr[3*(*numClauses)] = vars[0];
 				arr[3*(*numClauses) + 1] = vars[1];
 				arr[3*(*numClauses) + 2] = vars[2];
 
-				clauseVarMax = abs3Max(vars[0], vars[1], vars[2]);
+				clauseVarMax = arrAbsMax(vars, 3);
 				if(clauseVarMax > *maxVar){ *maxVar = clauseVarMax; }
 
 				++(*numClauses);
@@ -98,7 +103,7 @@ Bool parseFile(const char* file, int* arr, int* numClauses, int* maxVar, int max
 			return 1;
 		} else {
 			if(*numClauses > 0)
-				puts("Parser error- buffer size exceeded.\n");
+				fputs("Parser error- buffer size exceeded.\n", stderr);
 			return 0;
 		}
 
@@ -110,15 +115,17 @@ Bool parseFile(const char* file, int* arr, int* numClauses, int* maxVar, int max
 
 }
 
-int abs3Max(int a, int b, int c){
-	int max;
+int arrAbsMax(int* arr, int arrLen){
+	int absMax, i;
 
-	a = abs(a);
-	b = abs(b);
-	c = abs(c);
+	absMax = 0;
+	for(i = 0; i < arrLen; ++i){
+		if(abs(arr[i]) > absMax){
+			absMax = abs(arr[i]);
+		}
+	}
 
-	max = ((a > b)? a : b);
-	return (max > c)? max : c;
+	return absMax;
 }
 
 Bool runTests(){

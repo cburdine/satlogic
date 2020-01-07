@@ -406,8 +406,8 @@ Bool dpll3Sat(int sentence[], int numClauses, Bool solnArr[]){
             activeLiteral = TRUE;
 
             /* update maximal var */
-            if(v > maxVar){
-                maxVar = v;
+            if(abs(v) > maxVar){
+                maxVar = abs(v);
             }
 
             /* check for other variable instances in clause */
