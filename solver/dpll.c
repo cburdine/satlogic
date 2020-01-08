@@ -203,8 +203,7 @@ Bool dpllStatic(Clause* clauses, int numClauses, int numVariables, Bool* solnArr
     /* iterate until search tree is exhausted or solution found: */
     foundSoln = FALSE;
     while(!foundSoln && sentenceStack.top >= 0){
-
-
+        
         /* pop a sentence from the stack; allow for new variable assignments */
         popSentence(&sentenceStack);
         clauses = sentenceStack.poppedSentence;
@@ -222,7 +221,7 @@ Bool dpllStatic(Clause* clauses, int numClauses, int numVariables, Bool* solnArr
         backtrack = FALSE;
 
         /* identify pure literal and empty clauses */
-        for(c = 0; c < numClauses; ++c){
+        for(c = 0; c < numClauses && !backtrack; ++c){
             if(clauses[c].numActiveLiterals > 0){
 
                 /* process clause in unit prop map */
@@ -233,8 +232,9 @@ Bool dpllStatic(Clause* clauses, int numClauses, int numVariables, Bool* solnArr
                     /* if clause contains a single pure literal, 
                        add it to the pure literal set            */
                     for(l = 0; l < CLAUSE_SIZE; ++l){
-                        if(clauses[c].active[l])
+                        if(clauses[c].active[l]){
                             insertLiteral(&pureLiterals, clauses[c].literals[l]);
+                        }
                     }
                 }
 
@@ -254,11 +254,13 @@ Bool dpllStatic(Clause* clauses, int numClauses, int numVariables, Bool* solnArr
 
                 /* add pure literal to stack of assigned variables */
                 pureLit = pureLiterals.literals[pureLitInd];
-                litStatus = pureLiterals.contains[pureLitInd];
                 pureLitFrequency = unitPropMap.literalFrequency[abs(pureLit)];
+
+                assert(pureLiterals.contains[abs(pureLit)]);
 
                 /* record pure literal assignment */
                 addLiteral(&assignmentStack, pureLit);
+
                 deactivateVariable(&vsidsMap, abs(pureLit));
 
                 for(l = 0; l < pureLitFrequency && !backtrack; ++l){
@@ -282,10 +284,13 @@ Bool dpllStatic(Clause* clauses, int numClauses, int numVariables, Bool* solnArr
                             backtrack = TRUE;
 
                         }else if(currentClause->numActiveLiterals == 1){
+
                             /* find and record new pure literal */
                             for(l2 = 0; l2 < CLAUSE_SIZE && !currentClause->active[l2]; ++l2);
                             insertLiteral(&pureLiterals, currentClause->literals[l2]);
 
+                            assert(l2 < CLAUSE_SIZE);
+                            assert(vsidsMap.scores[abs(currentClause->literals[l2])] > 0.0);
                         }
                     }
                 }
@@ -293,7 +298,7 @@ Bool dpllStatic(Clause* clauses, int numClauses, int numVariables, Bool* solnArr
         }
         
         if(backtrack){
-        
+            
             backtrackToNextStackFrame(&assignmentStack, &vsidsMap);
 
         }else{
@@ -312,7 +317,8 @@ Bool dpllStatic(Clause* clauses, int numClauses, int numVariables, Bool* solnArr
             numNextClausesBPtr = pushNewEmptySentence(&sentenceStack, &nextClausesB);
             numNextClausesAPtr = pushNewEmptySentence(&sentenceStack, &nextClausesA);
 
-            /* perform branching variable assignment: 
+            /* 
+                perform branching variable assignment: 
                 A is where branchVar := T,
                 B is where branchVar := F 
             */

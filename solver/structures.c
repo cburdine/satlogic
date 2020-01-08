@@ -109,7 +109,6 @@ void insertLiteral(LiteralInstanceSet *lset, int literal){
     assert(abs(literal) <= lset->maxLitVal);
 
     if(!lset->contains[abs(literal)]){
-        
         lset->contains[abs(literal)] = TRUE;
         lset->literals[lset->size] = literal;
         ++(lset->size);
@@ -128,6 +127,7 @@ void destroyLiteralInstanceSet(LiteralInstanceSet* lset){
 
 /* LiteralToClauseMap  operations */
 void initLiteralToClauseMap(LiteralToClauseMap* map, int maxNumVariables, int maxNumClauses){
+    
     int i;
     map->maxNumVariables = maxNumVariables;
     map->maxNumClauses = maxNumClauses;
@@ -422,12 +422,12 @@ void reactivateVariable(VSIDSMap* map, int var){
 
     assert(var > 0);
     assert(map->scores[var] < 0.0);
-    
 
-    varScore = abs(map->scores[var]);
+    varScore = -1 * map->scores[var];
     map->scores[var] = varScore;
     pqVarInd = map->scorePQInverse[var];
     
+    assert(map->scores[var] > 0.0);
 
     if(pqVarInd > 0){
 
