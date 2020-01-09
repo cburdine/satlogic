@@ -91,6 +91,7 @@ int runSpecifiedManifestTestGroups(int groupNameCount, char** groupNames, FILE* 
                 break;
             }
         }
+        
         if(!foundMatch){
             fprintf(testLog, 
                 "ERROR- found no match for test group name '%s'\n\n", 

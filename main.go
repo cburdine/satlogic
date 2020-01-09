@@ -1,6 +1,10 @@
 package main
 
-// #include <solver/dpll.c>
+// CGO files:
+
+// #include "solver/dpll.c"
+// #include "solver/structures.c"
+// #cgo LDFLAGS: -lm
 import "C"
 
 import (
@@ -13,6 +17,8 @@ var SupportedSolvers = map[string]bool{"dpll": true}
 const SentenceBufferSize = 30000
 
 var sentenceBuffer = make([]C.int, SentenceBufferSize)
+
+var solnBuffer = make([]C.char, SentenceBufferSize)
 
 func main() {
 
@@ -41,20 +47,35 @@ func main() {
 
 		for k, v := range formulaData.sentence {
 			sentenceBuffer[k] = C.int(v)
+			//fmt.Printf("%d ", v)
 		}
 
 		// evaluate sentence:
 		fmt.Printf("[%s]: ", file)
 		arrptr := (*C.int)(&sentenceBuffer[0])
-		result := C.dpll3Sat(arrptr, C.int(len(formulaData.sentence)))
+		solnptr := (*C.char)(&solnBuffer[0])
 
-		// print result
-		resultStatus := "SATISFIABLE"
+		result := C.dpll3Sat(
+			arrptr,
+			C.int(len(formulaData.sentence)/3),
+			solnptr)
+
 		if result == 0 {
-			resultStatus = "UNSATISFIABLE"
+			fmt.Println("UNSATISFIABLE")
+		} else {
+			for i := 1; i < formulaData.maxNumVars; i++ {
+				fmt.Printf("%d=%s ", i, cboolToStr(solnBuffer[i]))
+			}
+			fmt.Println()
 		}
-		fmt.Println(resultStatus)
 
 	}
 
+}
+
+func cboolToStr(val C.char) string {
+	if val == 0 {
+		return "F"
+	}
+	return "T"
 }

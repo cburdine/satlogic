@@ -402,6 +402,7 @@ Bool dpll3Sat(int sentence[], int numClauses, Bool solnArr[]){
     initClauses = malloc(numClauses*sizeof(Clause));
     numInitClauses = 0;
     maxVar = 0;
+    
     for(c = 0; c < numClauses; ++c){
         copyClause = TRUE;
         numInactiveLiterals = 0;

@@ -50,6 +50,7 @@ int testSentenceStack(FILE* testLog){
     ASSERT_INT_EQUAL(stack.sentenceLengths[stack.top], 1);
 
     newSentencePtr = pushNewEmptySentence(&stack, &tempClausePtr);
+    
     ASSERT_INT_EQUAL(stack.sentenceLengths[stack.top], 0);
     
     *newSentencePtr = 25;

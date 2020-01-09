@@ -105,6 +105,7 @@ void initLiteralInstanceSet(LiteralInstanceSet* lset, int maxLitVal){
 
 void insertLiteral(LiteralInstanceSet *lset, int literal){
 
+    
     assert(abs(literal) > 0);
     assert(abs(literal) <= lset->maxLitVal);
 
