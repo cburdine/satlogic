@@ -108,7 +108,6 @@ Bool parseFile(const char* file, int* arr, int* numClauses, int* maxVar, int max
 		}
 
 	}else{
-
 		free(lineBuffer);
 		return 0;
 	}
