@@ -44,7 +44,7 @@ Currently, the only solver supported is: `dpll`
 
 The solver currently uses the Davis-Putnam-Logemann–Loveland (DPLL) algorithm with minimal pre-processing for solving SAT sentences. The DPLL algorithm either produces a satisfying assignment for a sentence or a branching refutation proof, depending on whether or not the sentence is unsatisfiable. A shallow but concise overview of this algorithm an be found on the [DPLL Algorithm Wikipedia page](https://en.wikipedia.org/wiki/DPLL_algorithm).
 
-The choice of branching variable is done through the Variable State Independent Decaying Sum (VSIDS) heuristic, which resolves variables that produce contradictions (empty clauses) on adjacent branches, thus optimizing the order in which branches of variable assignments are explored. More beinfo on this an other heuristics can be found on the corresponding [Wikipedia page](https://en.wikipedia.org/wiki/Boolean_satisfiability_algorithm_heuristics#cite_note-princeton-2)
+The choice of branching variable is done through the Variable State Independent Decaying Sum (VSIDS) heuristic, which resolves variables that produce contradictions (empty clauses) on adjacent branches that were recently explored, thus increasing the chances that a satisfying assignment is found earlier. More info on this and other heuristics can be found on the corresponding [Wikipedia page](https://en.wikipedia.org/wiki/Boolean_satisfiability_algorithm_heuristics#cite_note-princeton-2).
 
 The recursive pseudo-code for the algorithm is briefly outlined below:
 ```
@@ -66,12 +66,12 @@ DPLL( Φ ):
         if C is empty:
             return FALSE
 
-        # Propagate any unit clauses
+        # Propagate any unit clauses.
         else if C contains a single literal P:
             Φ <- PROPAGATE_UNIT( Φ, VARIABLE(P), SIGN(P) )
 
     # pick a variable and assign it a T/F value
-    # (this is done through the VSIDS heuristic)
+    # (this is done through the VSIDS heuristic).
     V <- CHOOSE_VSIDS_BRANCHING_LITERAL()
 
     Φ_A <- PROPAGATE_UNIT( Φ, VARIABLE(V), SIGN(V) )
