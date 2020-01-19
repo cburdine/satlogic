@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "../test_types.h"
-#include "../test_assert.h"
+#include "../../test_types.h"
+#include "../../test_assert.h"
 
-#include "../../structures.h"
+#include "../../../dpll/dpll_structures.h"
 
 
 int testSentenceStack(FILE*);

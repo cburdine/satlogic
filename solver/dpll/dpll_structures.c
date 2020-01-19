@@ -1,5 +1,5 @@
 
-#include "structures.h"
+#include "dpll_structures.h"
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>

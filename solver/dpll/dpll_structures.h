@@ -1,5 +1,5 @@
-#ifndef STRUCTURES_H
-#define STRUCTURES_H
+#ifndef DPLL_STRUCTURES_H
+#define DPLL_STRUCTURES_H
 
 
 #include <stdio.h>

@@ -19,16 +19,24 @@ buildall: main.go solver/dpll.c solver/dpll.h
 install: main.go solver/dpll.c solver/dpll.h
 	go install
 
-# test stub here
+# <test stub goes here>
 
 
 # builds c binary only
 cbuild: solver/main.c
-	gcc -Wpedantic -p -g -o bin/solver_c_main solver/*.c -lm
+	gcc -Wpedantic -p -g -o bin/solver_c_main \
+	solver/main.c \
+	solver/dpll/*.c \
+	solver/dp/*.c \
+	-lm
 
 #builds c in debug/sanitize mode
 cdebug: solver/main.c
-	gcc -Wpedantic -p -g -fsanitize=address -o bin/solver_c_main solver/*.c -lm
+	gcc -Wpedantic -p -g -fsanitize=address -o bin/solver_c_main \
+	solver/main.c \
+	solver/dpll/*.c \
+	solver/dp/*.c \
+	-lm
 
 # runs test cases on c binary:
 ctest: bin/solver_c_main

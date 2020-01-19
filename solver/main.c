@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <string.h>
 
-#include "dpll.h"
+#include "dpll/dpll.h"
 #include "test/test.h"
 
 #define BUFF_SIZE 1024

@@ -1,7 +1,7 @@
 #include <stdio.h>
-#include "../test.h"
-#include "../../dpll.h"
-#include "../../structures.h"
+#include "../../test.h"
+#include "../../../dpll/dpll.h"
+#include "../../../dpll/dpll_structures.h"
 
 
 int testSimpleSAT(FILE* testLog);

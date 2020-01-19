@@ -4,162 +4,10 @@
 #include <assert.h>
 
 #include "dpll.h"
-#include "structures.h"
-
-/* assumes all duplicate vars in clauses are removed */
-
-// Bool dpll(Clause* clauses, int numClauses, int numVariables){
-
-//     int c, l, l2, v, branchVar;
-//     int numPosLiterals, numNegLiterals, lastPosLiteral, lastNegLiteral;
-//     LiteralInstanceSet pureLiterals;
-//     Clause *nextClausesA, *nextClausesB;
-//     int numNextClausesA, numNextClausesB;
-//     Bool litExists, excludeClause;
-
-//     assert(numClauses > 0);
-//     assert(numVariables > 0);
-
-//     /* stack initializations */
-//     branchVar = 0;
-//     init(&pureLiterals, numVariables+1);
-//     litExists = TRUE;
-
-//     /* identify types of clauses */
-//     for(c = 0; c < numClauses; ++c ){
-        
-//         numPosLiterals = 0;
-//         numNegLiterals = 0;
-
-//         for(l = 0; l < CLAUSE_SIZE; ++l){
-//             if(clauses[c].active[l]){
-//                 if(clauses[c].literals[l] > 0){
-//                     ++numPosLiterals;
-//                     lastPosLiteral = l;
-//                 }else{
-//                     ++numNegLiterals;
-//                     lastNegLiteral = l;
-//                 }
-//             }
-//         }
-
-//         /* return FALSE if any empty literal found */
-//         if(numPosLiterals + numNegLiterals == 0){
-//             clear(&pureLiterals);
-//             return FALSE;
-//         }else if(numPosLiterals == 1 && numNegLiterals == 0){
-//             /* add positive pure literal */
-//             insertVar(&pureLiterals, clauses[c].literals[lastPosLiteral]);
-//         }else if(numNegLiterals == 1 && numPosLiterals == 0){
-//             /* add negative pure literal */
-//             insertVar(&pureLiterals, clauses[c].literals[lastNegLiteral]);
-//         }
-//     }
-
-//     /* printClauses(clauses, numClauses, stdout); */
-
-//     /* perform literal unit propagation */
-//     for(c = 0; c < numClauses; ++c){
-//         excludeClause = FALSE;
-//         for(l = 0; l < numClauses && !excludeClause; ++l){
-//             if(clauses[c].active[l]){
-//                 v = clauses[c].literals[l];
-//                 litStatus = pureLiterals.contains[abs(v)];
-//                 if(litStatus == TRUE){
-//                     if(v > 0){
-//                         /* exclude clause entirely */
-//                         excludeClause = TRUE;
-//                     }else{
-//                         /* eliminate literal */
-//                         clauses[c].active[l] = FALSE;
-//                     }
-//                 }else if(litStatus == TRUE_NEGATIVE){
-//                     if(v > 0){
-//                         /* eliminae literal */
-//                         clauses[c].active[l] = FALSE;
-//                     }else{
-//                         /* exclude clause entirely */
-//                         excludeClause = TRUE;
-//                     }
-//                 }else{
-//                     /* pick greatest (lexicographical) 
-//                     impure literal as branch var   */
-//                     if(abs(v) > branchVar){
-//                         branchVar = abs(v);
-//                     }
-//                 }
-//             }
-//         }
-//         if(excludeClause){
-//             clauses[c].active[ENTIRE_CLAUSE] = FALSE;
-//         }
-//     }
-//     clear(&pureLiterals);
-
-//     /* fputs("After Unit Prop:\n", stdout); */
-//     /* printClauses(clauses, numClauses, stdout); */
-
-//     /* branch into two arrays, A & B 
-//        where branchVar is T / F respectively */
-//     numNextClausesA = 0;
-//     numNextClausesB = 0;
-//     nextClausesA = malloc(numClauses * sizeof(Clause));
-//     nextClausesB = malloc(numClauses * sizeof(Clause));
-//     for(c = 0; c < numClauses; ++c){
-//         if(clauses[c].active[ENTIRE_CLAUSE]){
-//             excludeClause = FALSE;
-//             for(l = 0; l < ENTIRE_CLAUSE && !excludeClause; ++l){
-//                 if(clauses[c].active[l]){
-//                     v = clauses[c].literals[l];
-//                     if(v == branchVar){
-//                         /* copy clause into B with eliminated literal */
-//                         nextClausesB[numNextClausesB] = clauses[c];
-//                         nextClausesB[numNextClausesB].active[l] = FALSE;
-//                         ++numNextClausesB;
-//                         excludeClause = TRUE;
-//                     } else if(v == -1 * branchVar){
-//                         /* copy clause into A with eliminated literal */
-//                         nextClausesA[numNextClausesA] = clauses[c];
-//                         nextClausesA[numNextClausesA].active[l] = FALSE;
-//                         ++numNextClausesA;
-//                         excludeClause = TRUE;
-//                     }
-//                 }
-//             }
-//             if(!excludeClause){
-//                 /* copy clause verbatim to both next sets of clauses */
-//                 nextClausesA[numNextClausesA] = clauses[c];
-//                 nextClausesB[numNextClausesB] = clauses[c];
-//                 ++numNextClausesA;
-//                 ++numNextClausesB;
-//             }
-//         }
-//     }
-    
-//     if(numNextClausesA == 0 || numNextClausesB == 0){
-//         free(nextClausesA);
-//         free(nextClausesB);
-//         return TRUE;
-//     }
-
-//     /* Reurn DPLL(A) OR DPLL(B) */
-//     /* fprintf(stdout,"Setting %d TRUE:\n", branchVar); */
-//     litStatus = dpll(nextClausesA, numNextClausesA, branchVar+1);
-    
-//     /* fprintf(stdout,"Setting %d FALSE:\n", branchVar); */
-    
-//     litStatus = (litStatus || dpll(nextClausesB, numNextClausesB, branchVar+1));
-
-//     /* free memory */
-//     free(nextClausesA);
-//     free(nextClausesB);
-
-//     return litStatus;
-// }
-
+#include "dpll_structures.h"
 
 /* improvement upon old dpll */
-Bool dpllStatic(Clause* clauses, int numClauses, int numVariables, Bool* solnArr){
+Bool dpllStatic3Sat(Clause* clauses, int numClauses, int numVariables, Bool* solnArr){
 
     /* vsids decay & bump factor */
     static const double VSIDS_DECAY_FACTOR = 0.95;
@@ -442,7 +290,7 @@ Bool dpll3Sat(int sentence[], int numClauses, Bool solnArr[]){
     for(v = 0; v <= maxVar; ++v){ solnArr[v] = 0; }
 
     /* dpll-solve set of clauses */
-    result = dpllStatic(initClauses, numInitClauses, maxVar, solnArr);
+    result = dpllStatic3Sat(initClauses, numInitClauses, maxVar, solnArr);
 
     free(initClauses);
 

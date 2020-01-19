@@ -2,8 +2,8 @@ package main
 
 // CGO files:
 
-// #include "solver/dpll.c"
-// #include "solver/structures.c"
+// #include "solver/dpll/dpll.c"
+// #include "solver/dpll/structures.c"
 // #cgo LDFLAGS: -lm
 import "C"
 

@@ -3,10 +3,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "structures.h"
+#include "dpll_structures.h"
 
 /* improvement upon old dpll */
-Bool dpllStatic(Clause* clauses, int numClauses, int numVariables, Bool solnArr[]);
+Bool dpllStatic3Sat(Clause* clauses, int numClauses, int numVariables, Bool solnArr[]);
 
 /* dedups and converts variables into clauses, storing result
    in solnArr */
