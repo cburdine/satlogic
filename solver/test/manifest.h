@@ -10,12 +10,14 @@
 
 #include "testGroups/dpll/structures_test.h"
 #include "testGroups/dpll/dpll_test.h"
+#include "testGroups/model/model_structures_test.h"
 
 static TestGroup* TEST_GROUP_MANIFEST[] = {
     
     /* list reference to all TestGroups here */
     &STRUCTURES_TESTS,
     &DPLL_TESTS,
+    &MODEL_STRUCTURES_TESTS,
 
     END_OF_MANIFEST
 };
