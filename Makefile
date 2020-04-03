@@ -29,6 +29,7 @@ cbuild: solver/main.c
 	solver/dpll/*.c \
 	solver/dp/*.c \
 	solver/model/*.c \
+	solver/klib/*.c \
 	-lm
 
 #builds c in debug/sanitize mode
@@ -38,6 +39,7 @@ cdebug: solver/main.c
 	solver/dpll/*.c \
 	solver/dp/*.c \
 	solver/model/*.c \
+	solver/klib/*.c \
 	-lm
 
 # runs test cases on c binary:

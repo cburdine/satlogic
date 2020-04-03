@@ -2,6 +2,7 @@
 #define MODEL_STRUCTURES_H
 
 #include <stdio.h>
+#include "../klib/khash_int_2d.h"
 
 typedef char Byte;
 typedef char Bool;
@@ -13,7 +14,6 @@ typedef char Bool;
 struct ModelTrieNode;
 typedef struct ModelTrieNode {
     int var;
-    int serialIndex;
     struct ModelTrieNode* pos;
     struct ModelTrieNode* neg;
 } ModelTrieNode;
@@ -27,32 +27,36 @@ static ModelTrieNode END_NOT_SOLN_NODE;
 /* other useful data structures */
 typedef struct ModelCompressionMap {
     int maxNumVariables;
-    int numCompressedNodes;
-    int (*nodeChildren)[3];
-    int** nodeIndexMap;
+    int (*compressedNodeChildren)[3];
+    size_t compressedNodeChildrenSize;
+    ModelTrieNode*** nodePartitions;
+    size_t* nodePartitionSizes;
+    size_t* nodePartitionCapacities;
+    KhashInt2d nodeIndexMap;
 } ModelCompressionMap;
+
 #define CHILD_POS_IND 0
 #define CHILD_NEG_IND 1
 #define NODE_VAR_IND 2
 
-void initModelCompressionMap(ModelCompressionMap* cmap, int maxNumVariables);
+void initModelCompressionMap(ModelCompressionMap* cmap, int maxNumVariables, int baseNodesPerLevel);
+void clearModelCompressionMap(ModelCompressionMap* cmap);
 void destroyModelCompressionMap(ModelCompressionMap* cmap);
 
 typedef struct Model {
     ModelTrieNode* root;
-    ModelCompressionMap* compressionMap;
     int numNodes;
 } Model;
 
 void initModelFromClause(Model* model, int* orderedClause, int clauseSize, ModelCompressionMap* cmap);
 
-void compressModel(Model* model);
+void compressModel(Model* model, ModelCompressionMap* cmap);
 
-void unionModels(Model* dest, Model* src);
+void unionModels(Model* dest, Model* src, ModelCompressionMap* cmap);
 
-void intersectModels(Model* dest, Model* src);
+void intersectModels(Model* dest, Model* src, ModelCompressionMap* cmap);
 
-void printModel(Model* model, FILE* out);
+void printModel(Model* model, int maxNumVariables, FILE* out);
 
 void destroyModel(Model* model);
 
