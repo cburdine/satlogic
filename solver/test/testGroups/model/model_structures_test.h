@@ -30,15 +30,10 @@ int testPrintModel(FILE* testLog){
 
     compressModel(&model1, &cmap);
 
-    printModel(&model1, 13, testLog);
 
     compressModel(&model2, &cmap);
 
-    printModel(&model2, 13, testLog);
-
-    unionModels(&model1, &model2, &cmap);
-
-    printModel(&model1, 13, testLog);
+    intersectModels(&model1, &model2, &cmap);
 
     destroyModel(&model1);
     destroyModel(&model2);

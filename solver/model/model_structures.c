@@ -356,8 +356,84 @@ ModelTrieNode* auxUnionModels(ModelTrieNode* a, ModelTrieNode* b, size_t* modelS
 }
 
 
+ModelTrieNode* auxIntersectModels(ModelTrieNode* a, ModelTrieNode* b, size_t* modelSize);
 void intersectModels(Model* dest, Model* src, ModelCompressionMap* cmap){
-    
+    /* TODO: this could possibly be made more efficient by merging this
+             with the compressModel function and memoizing calls
+    */
+    ModelTrieNode* newModel;
+    size_t newModelSize;
+
+    newModelSize = 0;
+    newModel = auxIntersectModels(dest->root, src->root, &newModelSize);
+
+    /* destroy and replace old model with intersection model */
+    destroyModel(dest);
+    dest->root = newModel;
+    dest->numNodes = newModelSize;
+
+    compressModel(dest, cmap);
+}
+
+ModelTrieNode* auxIntersectModels(ModelTrieNode* a, ModelTrieNode* b, size_t* modelSize){
+    ModelTrieNode *newNode, *a_neg, *b_neg;
+
+    assert(a != NULL);
+    assert(b != NULL);
+
+    if((a->var == NOT_SOLN) || (b->var == NOT_SOLN)){
+        /* FALSE base case for OR operation */
+        return &END_NOT_SOLN_NODE;
+
+    } else if(a->var == SOLN && b->var == SOLN){
+        /* TRUE base case for OR operation */
+        return &END_SOLN_NODE;
+
+    } else {
+
+        /* recursively AND submodels */
+        newNode = malloc(sizeof(ModelTrieNode));
+        ++(*modelSize);
+        
+        if(a->var == SOLN){
+            newNode->var = b->var;
+            a_neg = &END_NOT_SOLN_NODE;
+            b_neg = b->neg;
+            b = b->pos;
+
+        } else if(b->var == SOLN) {
+            newNode->var = a->var;
+            b_neg = &END_NOT_SOLN_NODE;
+            a_neg = a->neg;
+            a = a->pos;
+            
+        } else {
+            
+            /* set new node to be variable that comes first */
+            if(a->var < b->var){
+                newNode->var = a->var;
+            } else {
+                newNode->var = b->var;
+            }
+
+            /* determine which children to intersect */
+            if(a->var == newNode->var){
+                a_neg = a->neg;
+                a = a->pos;
+            } else {
+                a_neg = a;
+            } if(b->var == newNode->var){
+                b_neg = b->neg;
+                b = b->pos;
+            } else {
+                b_neg = b;
+            }
+        }
+        
+        /* recusively intersect children */
+        newNode->pos = auxIntersectModels(a,b, modelSize);
+        newNode->neg = auxIntersectModels(a_neg, b_neg, modelSize);
+    }
 }
 
 void auxPrintModel(ModelTrieNode* trie, int* history, int maxNumVariables, FILE* out);

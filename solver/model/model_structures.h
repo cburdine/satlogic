@@ -40,12 +40,12 @@ typedef struct ModelCompressionMap {
 #define NODE_VAR_IND 2
 
 void initModelCompressionMap(ModelCompressionMap* cmap, int maxNumVariables, int baseNodesPerLevel);
-void clearModelCompressionMap(ModelCompressionMap* cmap);
+void resetModelCompressionMap(ModelCompressionMap* cmap);
 void destroyModelCompressionMap(ModelCompressionMap* cmap);
 
 typedef struct Model {
     ModelTrieNode* root;
-    int numNodes;
+    size_t numNodes;
 } Model;
 
 void initModelFromClause(Model* model, int* orderedClause, int clauseSize, ModelCompressionMap* cmap);
