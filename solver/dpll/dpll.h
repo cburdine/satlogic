@@ -10,6 +10,6 @@ Bool dpllStatic3Sat(Clause* clauses, int numClauses, int numVariables, Bool soln
 
 /* dedups and converts variables into clauses, storing result
    in solnArr */
-Bool dpll3Sat(int sentence[], int sentenceLen, Bool solnArr[]);
+Bool dpll3Sat(int sentence[], int numClauses, Bool solnArr[]);
 
 #endif /* DPLL_H */

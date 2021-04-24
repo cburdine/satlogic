@@ -7,7 +7,7 @@
 #include "dpll_structures.h"
 
 /* improvement upon old dpll */
-Bool dpllStatic3Sat(Clause* clauses, int numClauses, int numVariables, Bool* solnArr){
+Bool dpllStatic3Sat(Clause* clauses, int numClauses, int numVariables, Bool solnArr[]){
 
     /* vsids decay & bump factor */
     static const double VSIDS_DECAY_FACTOR = 0.95;

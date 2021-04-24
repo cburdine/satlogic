@@ -29,6 +29,7 @@ cbuild: solver/main.c
 	solver/dpll/*.c \
 	solver/dp/*.c \
 	solver/model/*.c \
+	solver/stochastic/*.c \
 	solver/klib/*.c \
 	-lm
 
@@ -39,6 +40,7 @@ cdebug: solver/main.c
 	solver/dpll/*.c \
 	solver/dp/*.c \
 	solver/model/*.c \
+	solver/stochastic/*.c \
 	solver/klib/*.c \
 	-lm
 
