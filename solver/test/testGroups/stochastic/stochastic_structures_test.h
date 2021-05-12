@@ -22,6 +22,8 @@ int testClauseMap(FILE* testLog){
     init3CNFClauseMap(&clauseMap, sentence, numClauses);
     
     ASSERT_INT_EQUAL(clauseMap.numVariables, 8);
+    ASSERT_INT_EQUAL(clauseMap.numClauses, numClauses);
+
     ASSERT_INT_EQUAL(clauseMap.mapLen[1], 2);
     ASSERT_INT_EQUAL(clauseMap.mapLen[2], 3);
     ASSERT_INT_EQUAL(clauseMap.mapLen[3], 1);
@@ -36,5 +38,11 @@ int testClauseMap(FILE* testLog){
     ASSERT_INT_EQUAL(clauseMap.map[2][1], 2);
     ASSERT_INT_EQUAL(clauseMap.map[2][2], 3);
 
+    for(int i = 0; i < 9; ++i){
+        ASSERT_INT_EQUAL(clauseMap.sentence[i], sentence[i]);
+    }
+
     destroyClauseMap(&clauseMap);
+
+    return PASS;
 }
