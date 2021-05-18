@@ -26,6 +26,7 @@ install: main.go solver/dpll.c solver/dpll.h
 cbuild: solver/main.c
 	gcc -Wpedantic -p -g -o bin/solver_c_main \
 	solver/main.c \
+	solver/preprocessor/*.c \
 	solver/dpll/*.c \
 	solver/dp/*.c \
 	solver/model/*.c \
@@ -37,6 +38,7 @@ cbuild: solver/main.c
 cdebug: solver/main.c
 	gcc -Wpedantic -p -g -fsanitize=address -o bin/solver_c_main \
 	solver/main.c \
+	solver/preprocessor/*.c \
 	solver/dpll/*.c \
 	solver/dp/*.c \
 	solver/model/*.c \

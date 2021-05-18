@@ -1,5 +1,7 @@
 #include <stdio.h>
-#include "../../test.h"
+#include "../../test_types.h"
+#include "../../test_assert.h"
+
 #include "../../../stochastic/walksat.h"
 #include "../../../stochastic/stochastic_structures.h"
 
@@ -73,13 +75,14 @@ int testUnsat(FILE* testLog){
     };
 
     int maxSteps = 1000000;
-
     ASSERT(walksat3CNF(sentence, 8, solnArr, maxSteps, 0.1) == FALSE);
 
     return PASS;
 }
 
 int testRedundantSentence(FILE* testLog){
+
     // TODO
+
     return PASS;    
 }

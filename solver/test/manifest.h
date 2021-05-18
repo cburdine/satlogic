@@ -15,10 +15,14 @@
 #include "testGroups/klib/khash_int_2d_test.h"
 #include "testGroups/stochastic/stochastic_structures_test.h"
 #include "testGroups/stochastic/walksat_test.h"
+#include "testGroups/preprocessor/preprocessor_structures_test.h"
+#include "testGroups/preprocessor/preprocessor_test.h"
 
 static TestGroup* TEST_GROUP_MANIFEST[] = {
     
     /* list reference to all TestGroups here */
+    &PREPROCESSOR_STRUCTURES_TESTS,
+    &PREPROCESSOR_TESTS,
     &STRUCTURES_TESTS,
     &DPLL_TESTS,
     /* &MODEL_STRUCTURES_TESTS, */

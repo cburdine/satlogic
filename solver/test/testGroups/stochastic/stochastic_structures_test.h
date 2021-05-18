@@ -1,5 +1,7 @@
 #include <stdio.h>
-#include "../../test.h"
+#include "../../test_types.h"
+#include "../../test_assert.h"
+
 #include "../../../stochastic/stochastic_structures.h"
 
 int testClauseMap(FILE*);

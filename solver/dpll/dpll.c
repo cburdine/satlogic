@@ -22,7 +22,7 @@ Bool dpllStatic3Sat(Clause* clauses, int numClauses, int numVariables, Bool soln
     int *numNextClausesAPtr, numNextClausesA, *numNextClausesBPtr, numNextClausesB;
     Clause *currentClause, *nextClausesA, *nextClausesB;
     Bool litStatus, excludeClause, backtrack, foundSoln;
-
+    
     /* declare useful data structures */
     LiteralInstanceSet pureLiterals;
     LiteralToClauseMap unitPropMap;

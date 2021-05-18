@@ -220,7 +220,7 @@ void setVSIDSMapToVarFrequencies(VSIDSMap* map, Clause* sentence, int numClauses
         for(l = 0; l < CLAUSE_SIZE; ++l){
             if(sentence[c].active[l] && sentence[c].literals[l]){
                 var = abs(sentence[c].literals[l]);
-                pqVarInd = map->scorePQInverse[var]; /* BUFFER ERROR HERE */
+                pqVarInd = map->scorePQInverse[var];
                 map->scores[var] += 1.0;
                 varScore = map->scores[var];
                 promoted = FALSE;

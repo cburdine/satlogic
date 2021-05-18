@@ -1,5 +1,7 @@
 #include <stdio.h>
-#include "../../test.h"
+#include "../../test_types.h"
+#include "../../test_assert.h"
+
 #include "../../../klib/khash_int_2d.h"
 
 int testKhashInt2d(FILE*);
