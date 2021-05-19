@@ -53,7 +53,7 @@ void insertLiteral(LiteralInstanceSet *lset, int literal);
 void clearAllLiterals(LiteralInstanceSet* lset);
 void destroyLiteralInstanceSet(LiteralInstanceSet* lset);
 
-static Bool setContainsLiteral(LiteralInstanceSet* lset, int literal){
+inline Bool setContainsLiteral(LiteralInstanceSet* lset, int literal){
     return lset->contains[(literal < 0? -1 * literal : literal)];
 }
 
@@ -116,17 +116,19 @@ void backtrackToNextStackFrame(LiteralAssignmentStack* stack, VSIDSMap* literalM
 void recordVariableAssignments(LiteralAssignmentStack* stack, Bool* solnArr);
 void printLiteralAssignmentStack(LiteralAssignmentStack* stack, FILE* out);
 
-static void toggleStackFrameBranch(LiteralAssignmentStack* stack){
+static inline void toggleStackFrameBranch(LiteralAssignmentStack* stack){
     stack->onSecondBranch[stack->top] = !(stack->onSecondBranch[stack->top]);
     stack->branchVariables[stack->top] *= -1;
 }
 
-static void setBranchLiteral(LiteralAssignmentStack* stack, int branchLiteral){
+static inline void setBranchLiteral(LiteralAssignmentStack* stack, int branchLiteral){
     stack->branchVariables[stack->top] = branchLiteral;
 }
 
-static void popFrame(LiteralAssignmentStack* stack){ 
+
+static inline void popFrame(LiteralAssignmentStack* stack){ 
     --(stack->top);
 }
+
 
 #endif /* STRUCTURES_H */

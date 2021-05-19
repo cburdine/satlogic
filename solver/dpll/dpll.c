@@ -16,12 +16,12 @@ Bool dpllStatic3Sat(Clause* clauses, int numClauses, int numVariables, Bool soln
     /* aux variables */
     int c, l, l2,
         clauseLit, pureLitInd, pureLit, pureLitFrequency,
-        currentClauseInd, branchVar, numNonEmptyClauses;
+        currentClauseInd, branchVar;
     
     /* iteration variables */
     int *numNextClausesAPtr, numNextClausesA, *numNextClausesBPtr, numNextClausesB;
     Clause *currentClause, *nextClausesA, *nextClausesB;
-    Bool litStatus, excludeClause, backtrack, foundSoln;
+    Bool excludeClause, backtrack, foundSoln;
     
     /* declare useful data structures */
     LiteralInstanceSet pureLiterals;
@@ -56,12 +56,6 @@ Bool dpllStatic3Sat(Clause* clauses, int numClauses, int numVariables, Bool soln
         popSentence(&sentenceStack);
         clauses = sentenceStack.poppedSentence;
         numClauses = sentenceStack.popedSentenceLen;
-
-        /*
-        printLiteralAssignmentStack(&assignmentStack, stdout);
-        printClauses(clauses, numClauses, stdout);
-        printf("Sentences Remaining: %d\n\n", (sentenceStack.top+1));
-        */
 
         /* clear data structures */
         clearAllLiterals(&pureLiterals);
@@ -108,7 +102,6 @@ Bool dpllStatic3Sat(Clause* clauses, int numClauses, int numVariables, Bool soln
 
                 /* record pure literal assignment */
                 addLiteral(&assignmentStack, pureLit);
-
                 deactivateVariable(&vsidsMap, abs(pureLit));
 
                 for(l = 0; l < pureLitFrequency && !backtrack; ++l){

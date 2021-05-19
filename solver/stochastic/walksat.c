@@ -36,7 +36,7 @@ Bool runWalkSAT(ClauseMap* clauseMap, Bool solnArr[],
         for(j = 0; j < mapLen; ++j){
             cl = clauseMap->map[i][j];
             if((solnArr[i]  && (cl > 0)) || 
-                !solnArr[i] && (cl < 0)){
+               (!solnArr[i] && (cl < 0))){
                 ++clauseSatLiterals[abs(cl)];
             }
         }
@@ -124,7 +124,7 @@ Bool walksat3CNF(int sentence[], int numClauses, Bool solnArr[],
 
 Bool walksatKCNF(int sentence[], int numClauses, int k, Bool solnArr[],
                     Ullint numSteps, double epsilon){
-    ClauseMap cm;
+
     Bool result = TRUE;
 
     /* reduce the sentence (with the preprocessor)*/

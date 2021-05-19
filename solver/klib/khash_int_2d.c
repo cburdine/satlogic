@@ -21,7 +21,7 @@ int hashGet(KhashInt2d* h, int x_1, int x_2){
     
     if((h->key = kh_get(m64, h->htable, pt)) == kh_end(h->htable)){
         h->last_result = 0;
-    }else if(h->last_result = kh_exist(h->htable, h->key) ){
+    }else if((h->last_result = kh_exist(h->htable, h->key))){
         return kh_value(h->htable, h->key);
     }
     

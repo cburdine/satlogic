@@ -416,8 +416,7 @@ void deactivateVariable(VSIDSMap* map, int var){
 }
 
 void reactivateVariable(VSIDSMap* map, int var){
-    int l, pqVarInd,
-           pqParentVar, pqParentVarInd;
+    int pqVarInd, pqParentVar, pqParentVarInd;
     double varScore, pqParentVarScore;
     Bool promoted;
 

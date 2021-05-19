@@ -11,7 +11,7 @@ static ModelTrieNode END_NOT_SOLN_NODE = { NOT_SOLN, NULL, NULL };
 
 void initModelCompressionMap(ModelCompressionMap* cmap, int maxNumVariables, int baseNodesPerLevel){
 
-    int i, partitionSize;
+    int i;
 
     cmap->maxNumVariables = maxNumVariables;
 
@@ -147,7 +147,7 @@ ModelTrieNode** auxDestroyModel(ModelTrieNode* subtrie, ModelTrieNode** freeList
 void partitionModel(ModelTrieNode* subtrie, ModelCompressionMap* cmap);
 void compressModel(Model* model, ModelCompressionMap* cmap){
     
-    int i, var, posInd, negInd, hInd, ncInd, currentPos, currentNeg;
+    int i, var, posInd, negInd, ncInd, currentPos, currentNeg;
     ModelTrieNode** compressedNodes;
     ModelTrieNode* current;
 
@@ -177,9 +177,9 @@ void compressModel(Model* model, ModelCompressionMap* cmap){
 
             } else {
 
-                hInd = hashGet(&(cmap->nodeIndexMap), currentPos, currentNeg);
 
                 /* if index has not been put in compression map, add it */
+                hashGet(&(cmap->nodeIndexMap), currentPos, currentNeg);
                 if(!(cmap->nodeIndexMap.last_result)){
                     ncInd = cmap->compressedNodeChildrenSize;
                     hashPut(&(cmap->nodeIndexMap), currentPos, currentNeg, ncInd);
@@ -308,51 +308,54 @@ ModelTrieNode* auxUnionModels(ModelTrieNode* a, ModelTrieNode* b, size_t* modelS
         /* FALSE base case for OR operation */
         return &END_NOT_SOLN_NODE;
 
-    } else {
+    }
 
-        /* recursively OR submodels */
-        newNode = malloc(sizeof(ModelTrieNode));
-        ++(*modelSize);
+    /* recursively OR submodels */
+    newNode = malloc(sizeof(ModelTrieNode));
+    ++(*modelSize);
+    
+    if(a->var == NOT_SOLN){
+        newNode->var = b->var;
+        a_neg = &END_NOT_SOLN_NODE;
+        b_neg = b->neg;
+        b = b->pos;
+
+    } else if(b->var == NOT_SOLN) {
+        newNode->var = a->var;
+        b_neg = &END_NOT_SOLN_NODE;
+        a_neg = a->neg;
+        a = a->pos;
         
-        if(a->var == NOT_SOLN){
-            newNode->var = b->var;
-            a_neg = &END_NOT_SOLN_NODE;
-            b_neg = b->neg;
-            b = b->pos;
-
-        } else if(b->var == NOT_SOLN) {
+    } else {
+        
+        /* set new node to be variable that comes first */
+        if(a->var < b->var){
             newNode->var = a->var;
-            b_neg = &END_NOT_SOLN_NODE;
+        } else {
+            newNode->var = b->var;
+        }
+
+        /* determine which children to union */
+        if(a->var == newNode->var){
             a_neg = a->neg;
             a = a->pos;
-            
         } else {
-            
-            /* set new node to be variable that comes first */
-            if(a->var < b->var){
-                newNode->var = a->var;
-            } else {
-                newNode->var = b->var;
-            }
-
-            /* determine which children to union */
-            if(a->var == newNode->var){
-                a_neg = a->neg;
-                a = a->pos;
-            } else {
-                a_neg = a;
-            } if(b->var == newNode->var){
-                b_neg = b->neg;
-                b = b->pos;
-            } else {
-                b_neg = b;
-            }
+            a_neg = a;
+        } if(b->var == newNode->var){
+            b_neg = b->neg;
+            b = b->pos;
+        } else {
+            b_neg = b;
         }
-        
-        /* recusively union children */
-        newNode->pos = auxUnionModels(a,b, modelSize);
-        newNode->neg = auxUnionModels(a_neg, b_neg, modelSize);
     }
+    
+    /* recusively union children */
+    newNode->pos = auxUnionModels(a,b, modelSize);
+    newNode->neg = auxUnionModels(a_neg, b_neg, modelSize);
+
+    // TODO: finish this!
+
+    return newNode;
 }
 
 
@@ -389,58 +392,58 @@ ModelTrieNode* auxIntersectModels(ModelTrieNode* a, ModelTrieNode* b, size_t* mo
         /* TRUE base case for OR operation */
         return &END_SOLN_NODE;
 
-    } else {
+    }
 
-        /* recursively AND submodels */
-        newNode = malloc(sizeof(ModelTrieNode));
-        ++(*modelSize);
+    /* recursively AND submodels */
+    newNode = malloc(sizeof(ModelTrieNode));
+    ++(*modelSize);
+    
+    if(a->var == SOLN){
+        newNode->var = b->var;
+        a_neg = &END_NOT_SOLN_NODE;
+        b_neg = b->neg;
+        b = b->pos;
+
+    } else if(b->var == SOLN) {
+        newNode->var = a->var;
+        b_neg = &END_NOT_SOLN_NODE;
+        a_neg = a->neg;
+        a = a->pos;
         
-        if(a->var == SOLN){
-            newNode->var = b->var;
-            a_neg = &END_NOT_SOLN_NODE;
-            b_neg = b->neg;
-            b = b->pos;
-
-        } else if(b->var == SOLN) {
+    } else {
+        
+        /* set new node to be variable that comes first */
+        if(a->var < b->var){
             newNode->var = a->var;
-            b_neg = &END_NOT_SOLN_NODE;
+        } else {
+            newNode->var = b->var;
+        }
+
+        /* determine which children to intersect */
+        if(a->var == newNode->var){
             a_neg = a->neg;
             a = a->pos;
-            
         } else {
-            
-            /* set new node to be variable that comes first */
-            if(a->var < b->var){
-                newNode->var = a->var;
-            } else {
-                newNode->var = b->var;
-            }
-
-            /* determine which children to intersect */
-            if(a->var == newNode->var){
-                a_neg = a->neg;
-                a = a->pos;
-            } else {
-                a_neg = a;
-            } if(b->var == newNode->var){
-                b_neg = b->neg;
-                b = b->pos;
-            } else {
-                b_neg = b;
-            }
+            a_neg = a;
+        } if(b->var == newNode->var){
+            b_neg = b->neg;
+            b = b->pos;
+        } else {
+            b_neg = b;
         }
-        
-        /* recusively intersect children */
-        newNode->pos = auxIntersectModels(a,b, modelSize);
-        newNode->neg = auxIntersectModels(a_neg, b_neg, modelSize);
     }
+    
+    /* recusively intersect children */
+    newNode->pos = auxIntersectModels(a,b, modelSize);
+    newNode->neg = auxIntersectModels(a_neg, b_neg, modelSize);
+
+    return newNode;
 }
 
 void auxPrintModel(ModelTrieNode* trie, int* history, int maxNumVariables, FILE* out);
 void printModel(Model* model, int maxNumVariables, FILE* out){
 
     int* history;
-    int hInd;
     
     history = malloc((maxNumVariables+2)*sizeof(int));
 
@@ -450,8 +453,7 @@ void printModel(Model* model, int maxNumVariables, FILE* out){
 }
 
 void auxPrintModel(ModelTrieNode* trie, int* history, int hInd, FILE* out){
-    int i;
-    
+
     if(trie->var == SOLN){
         fputs("[", out);
         for(int i = 0; i < hInd; ++i){

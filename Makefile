@@ -1,19 +1,17 @@
 #==============================================================
 #
-# Makefile for DPLL deterministic SAT solver 
-#  (Colin Burdine, last edited 10/27/2019)
+#  Makefile for SatLogic
+#  (Colin Burdine, last edited 5/19/2021)
 #
 #==============================================================
-CGOFILES=main.go
 BENCHMARKDATA=./data/medium/*.cnf
 
 # builds c binary only
 build: solver/main.c
-	gcc -Wpedantic -p -g -o bin/solver_c_main \
+	gcc -Wall -p -g -o bin/solver_c_main \
 	solver/main.c \
 	solver/preprocessor/*.c \
 	solver/dpll/*.c \
-	solver/dp/*.c \
 	solver/model/*.c \
 	solver/stochastic/*.c \
 	solver/klib/*.c \
@@ -21,11 +19,10 @@ build: solver/main.c
 
 #builds c in debug/sanitize mode
 debug: solver/main.c
-	gcc -Wpedantic -p -g -fsanitize=address -o bin/solver_c_main \
+	gcc -Wall -p -g -fsanitize=address -o bin/solver_c_main \
 	solver/main.c \
 	solver/preprocessor/*.c \
 	solver/dpll/*.c \
-	solver/dp/*.c \
 	solver/model/*.c \
 	solver/stochastic/*.c \
 	solver/klib/*.c \

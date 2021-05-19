@@ -17,8 +17,7 @@
 
 int runTestGroup(TestGroup* tGroup, FILE* testLog){
     int tind, result, numPassed;
-    FILE* assertLogTemp;
-    
+
     if(tGroup == NULL){
         fputs("Test Group undefined; tests cannot be run.", testLog);
         return FAIL;
@@ -72,6 +71,8 @@ int runManifestTestGroups(FILE* testLog){
             numTestGroupsFailed, (numTestGroupsFailed==1)? "" : "S"
         );
     }
+
+    return allPassed;
 }
 
 int runSpecifiedManifestTestGroups(int groupNameCount, char** groupNames, FILE* testLog){
@@ -114,6 +115,8 @@ int runSpecifiedManifestTestGroups(int groupNameCount, char** groupNames, FILE* 
             numTestGroupsNotFound, (numTestGroupsNotFound==1)? "" : "S"
         );
     }
+
+    return allPassed;
 }
 
 #endif /* C_UNIT_TEST_H */
