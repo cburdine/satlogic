@@ -1,6 +1,9 @@
 # ignore any data:
 data/*
 
+# ignore any legacy golang files
+*.go
+
 # keep bin directory (to compile into)
 bin/*
 !bin/.gitkeep
