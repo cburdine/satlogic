@@ -53,7 +53,6 @@ int testUprop(FILE* testLog){
     ASSERT_INT_EQUAL(solnArr[4], 0);
     ASSERT_INT_EQUAL(solnArr[7], 0);
 
-
     return PASS;
 }
 
@@ -75,6 +74,7 @@ int testUnsat(FILE* testLog){
     };
 
     int maxSteps = 1000000;
+
     ASSERT(walksat3CNF(sentence, 8, solnArr, maxSteps, 0.1) == FALSE);
 
     return PASS;
@@ -82,7 +82,39 @@ int testUnsat(FILE* testLog){
 
 int testRedundantSentence(FILE* testLog){
 
-    // TODO
+    /*
+        The pure assignments 5 = F and 4 = T are trivial.
+        The unique solution the subsentence after this assignment
+        is 1 = T, 2 = F, 3 = T.
+    */
+    int sentence[] = {
+        1,  2,  3,  0,
+        1,  2,  4,  4,
+        1,  2,  2, -3,
+        1, -2,  3,  3,
+        1, -2, -3,  1,
+       -1,  2,  3, -1,
+       -1,  2,  3, -1,
+       -1,  0, -2,  3,
+       -1, -2,  3,  0,
+       -1, -2, -3,  0,
+        0, -3, -1, -2,
+        -5, -4,  3,  2,
+    };
+
+    Bool solnArr[] = { 0, 
+        0, 0, 1, 0, 1
+    };
+
+    int maxSteps = 1000000;
+
+    ASSERT(walksatKCNF(sentence, 12, 4, solnArr, maxSteps, 0.01));
+    ASSERT(!solnArr[0] && "solnArr[0] should be cleared");
+    ASSERT(solnArr[1] == TRUE);
+    ASSERT(solnArr[2] == FALSE);
+    ASSERT(solnArr[3] == TRUE);
+    ASSERT(solnArr[4] == TRUE);
+    ASSERT(solnArr[5] == FALSE);
 
     return PASS;    
 }

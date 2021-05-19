@@ -5,14 +5,19 @@
 #include <stdlib.h>
 #include "stochastic_structures.h"
 
-Bool walksatStaticCNF(ClauseMap* clauseMap, Bool solnArr[], 
-                        unsigned int maxSteps, double epsilon);
+typedef unsigned long long int Ullint;
+
+Bool runWalkSAT(ClauseMap* clauseMap, Bool solnArr[], 
+                    Ullint numSteps, double epsilon);
 
 Bool walksat3CNF(int sentence[], int numClauses, Bool solnArr[], 
-                    unsigned int maxSteps, double epsilon);
+                    Ullint numSteps, double epsilon);
 
 Bool walksatKCNF(int sentence[], int numClauses, int k, Bool solnArr[], 
-                    unsigned int maxSteps, double epsilon);
+                    Ullint numSteps, double epsilon);
+
+Bool walksatRawKCNF(int sentence[], int numClauses, int k, Bool solnArr[],
+                    Ullint numSteps, double epsilon);
 
 
 #endif /* WALKSAT_H */

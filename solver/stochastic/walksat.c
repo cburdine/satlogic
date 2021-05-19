@@ -1,14 +1,15 @@
 #include "walksat.h"
 #include "fastrand.h"
 #include "stochastic_structures.h"
+#include "../preprocessor/preprocessor.h"
 
 #include <stdlib.h>
 #include <time.h>
 #include <assert.h>
 
-Bool walksatStaticCNF(ClauseMap* clauseMap, Bool solnArr[],
-                      unsigned int maxSteps, double epsilon){
-    unsigned int step;
+Bool runWalkSAT(ClauseMap* clauseMap, Bool solnArr[], 
+                    Ullint numSteps, double epsilon){
+    Ullint step;
     int i, j, cl, mapLen;
     int numClauses = clauseMap->numClauses;
     int numVariables = clauseMap->numVariables;
@@ -60,7 +61,7 @@ Bool walksatStaticCNF(ClauseMap* clauseMap, Bool solnArr[],
     seedFastrand(time(0));
 
     /* perform search: */
-    for(step = 0; (numUnsatClauses > 0) && (step < maxSteps); ++step){
+    for(step = 0; (numUnsatClauses > 0) && (step < numSteps); ++step){
 
         /*
         for(i = 1; i <= numClauses; ++i){
@@ -70,7 +71,7 @@ Bool walksatStaticCNF(ClauseMap* clauseMap, Bool solnArr[],
         for(i = 1; i <= numVariables; ++i){
             printf("%d", solnArr[i]);
         }
-        printf("] (%d/%d)\n", step, maxSteps);
+        printf("] (%d/%d)\n", step, numSteps);
         */
 
         clChoice = candidateClauses[fastrandN(numUnsatClauses)];
@@ -82,26 +83,28 @@ Bool walksatStaticCNF(ClauseMap* clauseMap, Bool solnArr[],
 
         for(i = 0; i < clauseMap->clauseLen; ++i){
             int lit = clauseMap->sentence[i + (clChoice-1)*clauseMap->clauseLen];
-            
-            if(epsilonInt < epsilonThreshold){
-                candidateLits[numCandidates] = lit;
-                ++numCandidates;
-            } else {
-                int newUnsat = countNewlyUnsatClauses(clauseMap,lit,clauseSatLiterals);
-                
-                if(newUnsat < minNewUnsat){
-                    minNewUnsat = newUnsat;
-                    numCandidates = 0;
-                }
-                if(newUnsat == minNewUnsat){
+            if(lit){
+                if(epsilonInt < epsilonThreshold){
                     candidateLits[numCandidates] = lit;
                     ++numCandidates;
+                } else {
+                    int newUnsat = countNewlyUnsatClauses(clauseMap,lit,clauseSatLiterals);
+                    
+                    if(newUnsat < minNewUnsat){
+                        minNewUnsat = newUnsat;
+                        numCandidates = 0;
+                    }
+                    if(newUnsat == minNewUnsat){
+                        candidateLits[numCandidates] = lit;
+                        ++numCandidates;
+                    }
                 }
             }
         }
 
         /* randomly pick and flip a candidate */
         flipLiteral = abs(candidateLits[fastrandN(numCandidates)]);
+        assert(flipLiteral != 0);
         if(!solnArr[flipLiteral]){ flipLiteral = -flipLiteral; }
         numUnsatClauses = flip(clauseMap, flipLiteral, clauseSatLiterals, candidateClauses);
         solnArr[abs(flipLiteral)] ^= TRUE;
@@ -115,21 +118,64 @@ Bool walksatStaticCNF(ClauseMap* clauseMap, Bool solnArr[],
 }
 
 Bool walksat3CNF(int sentence[], int numClauses, Bool solnArr[], 
-                    unsigned int maxSteps, double epsilon){
-    return walksatKCNF(sentence, numClauses, 3, solnArr, maxSteps, epsilon);
+                    Ullint numSteps, double epsilon){
+    return walksatKCNF(sentence, numClauses, 3, solnArr, numSteps, epsilon);
 }
 
-Bool walksatKCNF(int sentence[], int numClauses, int k, Bool solnArr[], 
-                    unsigned int maxSteps, double epsilon){
+Bool walksatKCNF(int sentence[], int numClauses, int k, Bool solnArr[],
+                    Ullint numSteps, double epsilon){
     ClauseMap cm;
-    Bool result;
-    
-    /* initialize clause map */
+    Bool result = TRUE;
+
+    /* reduce the sentence (with the preprocessor)*/
+    int sentenceLen = numClauses*k;
+    int* reducedSentence = malloc(sentenceLen*sizeof(int));
+    int i, maxVar = 0;
+    for(i = 0; i < sentenceLen; ++i){
+        reducedSentence[i] = sentence[i];
+        if(abs(sentence[i]) > maxVar){ maxVar = abs(sentence[i]); }
+    }
+    int* reducedXlatMap = malloc((maxVar+1)*sizeof(int));
+    reduceKCNF(reducedSentence, &numClauses, k, reducedXlatMap);
+    Bool* reducedSolnArr = calloc((maxVar+1),sizeof(Bool));
+    for(i = 1; i <= maxVar; ++i){
+        if(reducedXlatMap[i] > 0){
+            reducedSolnArr[reducedXlatMap[i]] = solnArr[i];
+        }
+    }
+
+    /* solve the sentence if it is nontrivial */
+    if(numClauses > 0){
+
+        /* initialize clause map */
+        result = walksatRawKCNF(reducedSentence, numClauses, k, reducedSolnArr, numSteps, epsilon);
+
+    }
+
+    /* record result */
+    for(i = 1; i <= maxVar; ++i){
+        if(reducedXlatMap[i] > 0){
+            solnArr[i] = (reducedSolnArr[reducedXlatMap[i]]);
+        } else {
+            solnArr[i] = (reducedXlatMap[i] == TRUE_XLAT_ASSIGNMENT);
+        }
+    }
+
+    /* clean up */
+    free(reducedSentence);
+    free(reducedXlatMap);
+    free(reducedSolnArr);
+
+    return result;
+}
+
+Bool walksatRawKCNF(int sentence[], int numClauses, int k, Bool solnArr[],
+                    Ullint numSteps, double epsilon){
+        
+    /* run WalkSAT directly (no preprocessing) */
+    ClauseMap cm;
     initKCNFClauseMap(&cm, sentence, k, numClauses);
-
-    result = walksatStaticCNF(&cm, solnArr, maxSteps, epsilon);
-
-    /* clean up clause map */
+    Bool result = runWalkSAT(&cm, solnArr, numSteps, epsilon);
     destroyClauseMap(&cm);
 
     return result;

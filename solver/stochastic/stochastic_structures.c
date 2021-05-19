@@ -40,8 +40,9 @@ void initKCNFClauseMap(ClauseMap* cm, int sentence[], int k, int numClauses){
         mapLenIdx[i] = 0;
     }
     for(i = 0; i < sentenceLen; ++i){
-        assert(sentence[i] != 0);
-        ++(cm->mapLen[abs(sentence[i])]);
+        if(sentence[i]){
+            ++(cm->mapLen[abs(sentence[i])]);
+        }
     }
 
     /* allocate ClauseMap */
@@ -52,14 +53,15 @@ void initKCNFClauseMap(ClauseMap* cm, int sentence[], int k, int numClauses){
 
     /* populate ClauseMap */
     for(i = 0; i < sentenceLen; ++i){
-        j = mapLenIdx[abs(sentence[i])];
-        clause = (i/k)+1;
-        if(sentence[i] < 0){
-            clause *= -1;
+        if(sentence[i]){
+            j = mapLenIdx[abs(sentence[i])];
+            clause = (i/k)+1;
+            if(sentence[i] < 0){
+                clause *= -1;
+            }
+            cm->map[abs(sentence[i])][j] = clause;
+            ++(mapLenIdx[abs(sentence[i])]);
         }
-        cm->map[abs(sentence[i])][j] = clause;
-        
-        ++(mapLenIdx[abs(sentence[i])]);
     }
 
     free(mapLenIdx);
