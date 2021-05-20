@@ -146,10 +146,8 @@ Bool walksatKCNF(int sentence[], int numClauses, int k, Bool solnArr[],
 
     /* solve the sentence if it is nontrivial */
     if(numClauses > 0){
-
         /* initialize clause map */
         result = walksatRawKCNF(reducedSentence, numClauses, k, reducedSolnArr, numSteps, epsilon);
-
     }
 
     /* record result */

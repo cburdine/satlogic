@@ -127,7 +127,7 @@ Bool dpllStatic3Sat(Clause* clauses, int numClauses, int numVariables, Bool soln
                         }else if(currentClause->numActiveLiterals == 1){
 
                             /* find and record new pure literal */
-                            for(l2 = 0; l2 < CLAUSE_SIZE && !currentClause->active[l2]; ++l2);
+                            for(l2 = 0; l2 < (CLAUSE_SIZE-1) && !currentClause->active[l2]; ++l2);
                             insertLiteral(&pureLiterals, currentClause->literals[l2]);
 
                             assert(l2 < CLAUSE_SIZE);

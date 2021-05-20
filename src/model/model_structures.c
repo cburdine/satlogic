@@ -179,14 +179,13 @@ void compressModel(Model* model, ModelCompressionMap* cmap){
 
 
                 /* if index has not been put in compression map, add it */
-                hashGet(&(cmap->nodeIndexMap), currentPos, currentNeg);
+                ncInd = hashGet(&(cmap->nodeIndexMap), currentPos, currentNeg);
                 if(!(cmap->nodeIndexMap.last_result)){
                     ncInd = cmap->compressedNodeChildrenSize;
                     hashPut(&(cmap->nodeIndexMap), currentPos, currentNeg, ncInd);
                     cmap->compressedNodeChildren[ncInd][CHILD_POS_IND] = currentPos;
                     cmap->compressedNodeChildren[ncInd][CHILD_NEG_IND] = currentNeg;
                     cmap->compressedNodeChildren[ncInd][NODE_VAR_IND] = var;
-                    
                     ++(cmap->compressedNodeChildrenSize);
                 }
             }

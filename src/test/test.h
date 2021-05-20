@@ -80,6 +80,8 @@ int runSpecifiedManifestTestGroups(int groupNameCount, char** groupNames, FILE* 
     char foundMatch;
 
     allPassed = PASS;
+    numTestGroupsNotFound = 0;
+    numTestGroupsFailed = 0;
     for(gnInd = 0; gnInd < groupNameCount; ++gnInd){
         foundMatch = 0;
         for(tgInd = 0; TEST_GROUP_MANIFEST[tgInd] != END_OF_MANIFEST; ++tgInd){

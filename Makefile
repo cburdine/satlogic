@@ -4,12 +4,12 @@
 #  (Colin Burdine, last edited 5/19/2021)
 #
 #==============================================================
-BENCHMARKDATA=./data/medium/*.cnf
+BENCHMARKDATA=./data/uf150/uf150-0100.cnf
 BINARY=./bin/satlogic
 
 # builds c binary only
 build: src/main.c
-	gcc -Wall -p -g -o $(BINARY) \
+	gcc -Wall -p -g -O2 -o $(BINARY) \
 	src/main.c \
 	src/preprocessor/*.c \
 	src/dpll/*.c \
@@ -34,7 +34,7 @@ test: $(BINARY)
 	$(BINARY) --test
 
 # does gprof profiling- stores result in bin/profile.txt
-profile: bin/solver_c_test
+profile: $(BINARY)
 	$(BINARY) $(BENCHMARKDATA) > /dev/null
 	gprof $(BINARY) ./gmon.out > ./bin/profile.txt
 	rm -f gmon.out
