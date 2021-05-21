@@ -20,8 +20,8 @@ static TestGroup MODEL_STRUCTURES_TESTS = {
 
 int testPrintModel(FILE* testLog){
 
-    int orderedClause1[10] = {1, -2, 3, -4, 5, -6, 7, -8, 9, 10};
-    int orderedClause2[8] = {-2, -4, -6, -8, 10, 11, 12, 13};
+    int orderedClause1[10] = { 1, -2,  3, -4,  5, -6,  7, -8, 9, 10 };
+    int orderedClause2[8] = { -2, -4, -6, -8, 10, 11, 12, 13 };
 
     Model model1, model2;
     ModelCompressionMap cmap;
@@ -32,10 +32,11 @@ int testPrintModel(FILE* testLog){
 
     compressModel(&model1, &cmap);
 
-
     compressModel(&model2, &cmap);
 
     intersectModels(&model1, &model2, &cmap);
+
+    printModel(&model1, 13, testLog);
 
     destroyModel(&model1);
     destroyModel(&model2);

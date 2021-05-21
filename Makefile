@@ -4,7 +4,7 @@
 #  (Colin Burdine, last edited 5/19/2021)
 #
 #==============================================================
-BENCHMARKDATA=./data/uf150/uf150-0100.cnf
+BENCHMARKDATA=./bin/benchmarks/*.cnf
 BINARY=./bin/satlogic
 
 # builds c binary only
@@ -13,7 +13,6 @@ build: src/main.c
 	src/main.c \
 	src/preprocessor/*.c \
 	src/dpll/*.c \
-	src/model/*.c \
 	src/stochastic/*.c \
 	src/klib/*.c \
 	-lm
@@ -24,7 +23,6 @@ debug: src/main.c
 	src/main.c \
 	src/preprocessor/*.c \
 	src/dpll/*.c \
-	src/model/*.c \
 	src/stochastic/*.c \
 	src/klib/*.c \
 	-lm
